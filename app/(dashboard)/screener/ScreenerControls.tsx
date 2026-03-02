@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 type AdapterType = "yahoo" | "kiwoom" | "mock";
 
@@ -28,28 +28,6 @@ export default function ScreenerControls({ market, date, adapterType }: Props) {
   const [localMarket, setLocalMarket] = useState(market);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-
-  // 마운트 시: URL에 파라미터가 없으면 localStorage에서 복원
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const hasExplicitParams = params.has("market") || params.has("adapter");
-    if (hasExplicitParams) return;
-
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const prefs: Prefs = JSON.parse(raw);
-
-      const next = new URLSearchParams();
-      if (prefs.market) next.set("market", prefs.market);
-      if (prefs.adapter) next.set("adapter", prefs.adapter);
-      if (prefs.date) next.set("date", prefs.date);
-
-      window.location.replace(`/screener?${next.toString()}`);
-    } catch {
-      // localStorage 파싱 실패 시 무시
-    }
-  }, []);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     setIsLoading(true);

@@ -49,6 +49,8 @@ export default async function ScreenerPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* localStorage 설정 복원 — React 마운트 전 실행으로 깜빡임 방지 */}
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.date)q.set('date',v.date);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* 페이지 헤더 */}
         <div className="mb-6">
