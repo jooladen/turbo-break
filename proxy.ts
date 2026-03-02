@@ -8,7 +8,7 @@ const PROTECTED_ROUTES = ["/dashboard"];
 // 인증된 사용자가 접근 불가한 경로 (로그인/회원가입)
 const AUTH_ROUTES = ["/login", "/signup"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(TOKEN_KEY)?.value;
 
