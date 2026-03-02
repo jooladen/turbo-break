@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type AdapterType = "yahoo" | "kiwoom" | "mock";
 
@@ -16,17 +16,62 @@ const ADAPTER_OPTIONS: Array<{ value: AdapterType; label: string }> = [
   { value: "kiwoom", label: "키움 REST API" },
 ];
 
+const STORAGE_KEY = "screener-prefs";
+
+type Prefs = {
+  market: string;
+  adapter: AdapterType;
+  date: string;
+};
+
 export default function ScreenerControls({ market, date, adapterType }: Props) {
   const [localMarket, setLocalMarket] = useState(market);
   const [isLoading, setIsLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // 마운트 시: URL에 파라미터가 없으면 localStorage에서 복원
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hasExplicitParams = params.has("market") || params.has("adapter");
+    if (hasExplicitParams) return;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const prefs: Prefs = JSON.parse(raw);
+
+      const next = new URLSearchParams();
+      if (prefs.market) next.set("market", prefs.market);
+      if (prefs.adapter) next.set("adapter", prefs.adapter);
+      if (prefs.date) next.set("date", prefs.date);
+
+      window.location.replace(`/screener?${next.toString()}`);
+    } catch {
+      // localStorage 파싱 실패 시 무시
+    }
+  }, []);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    setIsLoading(true);
+    const fd = new FormData(e.currentTarget);
+    try {
+      const prefs: Prefs = {
+        market: localMarket,
+        adapter: (fd.get("adapter") as AdapterType) ?? "mock",
+        date: (fd.get("date") as string) ?? date,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    } catch {
+      // 저장 실패 시 무시
+    }
+  }
 
   return (
-    // method="GET" → 브라우저가 직접 /screener?market=...&date=... 로 이동
-    // router.push() 를 쓰면 _rsc 파라미터가 URL에 노출되는 문제 방지
     <form
+      ref={formRef}
       action="/screener"
       method="GET"
-      onSubmit={() => setIsLoading(true)}
+      onSubmit={handleSubmit}
       className="relative overflow-hidden flex flex-wrap items-center gap-2 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 mb-6"
     >
       {/* 프로그레스 바 */}
@@ -35,6 +80,7 @@ export default function ScreenerControls({ market, date, adapterType }: Props) {
           <div className="h-full bg-blue-500 animate-progress" />
         </div>
       )}
+
       {/* 시장 선택 — 숨김 input으로 전달 */}
       <input type="hidden" name="market" value={localMarket} />
 
