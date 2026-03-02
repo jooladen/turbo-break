@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* 클래스 기반 다크모드 (localStorage 연동) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes progress {
+  0%   { width: 0%;   margin-left: 0; }
+  50%  { width: 60%;  margin-left: 20%; }
+  100% { width: 0%;   margin-left: 100%; }
+}
+
+.animate-progress {
+  animation: progress 1.4s ease-in-out infinite;
+}

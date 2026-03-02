@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "enabled": false,
+  "teamName": "",
+  "feature": "turbo-break",
+  "pdcaPhase": "do",
+  "orchestrationPattern": "leader",
+  "ctoAgent": "opus",
+  "startedAt": "2026-03-02T16:23:09.830Z",
+  "lastUpdated": "2026-03-02T17:10:20.826Z",
+  "teammates": [],
+  "progress": {
+    "totalTasks": 0,
+    "completedTasks": 0,
+    "inProgressTasks": 0,
+    "failedTasks": 0,
+    "pendingTasks": 0
+  },
+  "recentMessages": [
+    {
+      "from": "system",
+      "to": "all",
+      "content": "Phase check → act (auto-advanced)",
+      "timestamp": "2026-03-02T16:26:46.607Z"
+    }
+  ],
+  "sessionId": "d9d07747-b3ff-47fe-a671-35c1cb5a66b1"
+}
