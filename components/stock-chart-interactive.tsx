@@ -293,30 +293,28 @@ export default function StockChartInteractive({ data }: Props) {
         className="absolute top-2 left-2 z-10 pointer-events-none"
       />
 
-      {/* 20일 최고가 레이블 (상단 중앙) */}
+      {/* 20일 최고가 + MA 범례 (상단 중앙, 세로 정렬) */}
       {high20 > 0 && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-1">
           <span className="text-xs font-semibold text-orange-500 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded border border-orange-300 dark:border-orange-700 whitespace-nowrap">
             20일 고가 {fmt(high20)}
           </span>
+          <div className="flex items-center gap-3 text-xs bg-white/70 dark:bg-gray-900/70 px-2 py-0.5 rounded">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 bg-[#f59e0b]" />
+              <span className="text-gray-500 dark:text-gray-400">MA5</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 bg-[#60a5fa]" />
+              <span className="text-gray-500 dark:text-gray-400">MA20</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 bg-[#a78bfa]" />
+              <span className="text-gray-500 dark:text-gray-400">MA60</span>
+            </span>
+          </div>
         </div>
       )}
-
-      {/* MA 범례 */}
-      <div className="absolute top-2 right-2 z-10 flex items-center gap-3 text-xs pointer-events-none">
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 bg-[#f59e0b]" />
-          <span className="text-gray-500 dark:text-gray-400">MA5</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 bg-[#60a5fa]" />
-          <span className="text-gray-500 dark:text-gray-400">MA20</span>
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 bg-[#a78bfa]" />
-          <span className="text-gray-500 dark:text-gray-400">MA60</span>
-        </span>
-      </div>
 
       <div ref={containerRef} className="w-full" />
 
