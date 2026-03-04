@@ -43,8 +43,11 @@ function generateHistory(
 
   let price = basePrice;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   for (let i = days - 1; i >= 0; i--) {
-    const date = new Date("2026-03-03");
+    const date = new Date(today);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().slice(0, 10);
 
@@ -89,9 +92,13 @@ function generateBreakoutStock(
 
   let price = basePrice * 0.97;
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+
   // 60일 전 ~ 1일 전: 박스권 횡보
   for (let i = 61; i >= 1; i--) {
-    const date = new Date("2026-03-03");
+    const date = new Date(today);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().slice(0, 10);
 
@@ -132,7 +139,7 @@ function generateBreakoutStock(
   const todayTurnover = Math.floor(todayVolume * todayClose);
 
   history.push({
-    date: "2026-03-03",
+    date: todayStr,
     open: Math.round(todayOpen),
     high: Math.round(todayHigh),
     low: Math.round(todayLow),

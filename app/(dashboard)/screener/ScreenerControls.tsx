@@ -21,7 +21,6 @@ const STORAGE_KEY = "screener-prefs";
 type Prefs = {
   market: string;
   adapter: AdapterType;
-  date: string;
 };
 
 export default function ScreenerControls({ market, date, adapterType }: Props) {
@@ -33,10 +32,10 @@ export default function ScreenerControls({ market, date, adapterType }: Props) {
     setIsLoading(true);
     const fd = new FormData(e.currentTarget);
     try {
+      // 날짜는 저장하지 않음 — 항상 오늘 날짜가 기본값이어야 함
       const prefs: Prefs = {
         market: localMarket,
         adapter: (fd.get("adapter") as AdapterType) ?? "mock",
-        date: (fd.get("date") as string) ?? date,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch {

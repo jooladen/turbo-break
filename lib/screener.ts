@@ -3,6 +3,9 @@ import type {
   StockOHLCV,
   ScreenerConditions,
   ScreenerResult,
+  SignalMetrics,
+  BuySignal,
+  BuyGrade,
 } from "./screener-types";
 
 const TURNOVER_MIN = 50_000_000_000; // 500억 원
@@ -128,6 +131,195 @@ function calcChangeRate(today: StockOHLCV, yesterday: StockOHLCV): number {
 }
 
 /**
+ * SignalMetrics 계산
+ */
+function calcSignalMetrics(
+  today: StockOHLCV,
+  yesterday: StockOHLCV,
+  prior20: StockOHLCV[],
+  history: StockOHLCV[],
+): SignalMetrics {
+  const slice20 = prior20.slice(0, LOOKBACK_DAYS);
+
+  const high20 = slice20.length > 0 ? Math.max(...slice20.map((d) => d.high)) : 0;
+  const low20 = slice20.length > 0 ? Math.min(...slice20.map((d) => d.low)) : 0;
+  const avgVolume =
+    slice20.length > 0
+      ? slice20.reduce((sum, d) => sum + d.volume, 0) / slice20.length
+      : 0;
+
+  const ma60Slice = history.slice(1, MA60_PERIOD + 1);
+  const ma60 =
+    ma60Slice.length >= MA60_PERIOD
+      ? ma60Slice.reduce((sum, d) => sum + d.close, 0) / MA60_PERIOD
+      : 0;
+
+  const fiveDaysAgo = history.length >= 7 ? history[6] : null;
+  const gain5d =
+    fiveDaysAgo && fiveDaysAgo.close > 0
+      ? ((history[1].close - fiveDaysAgo.close) / fiveDaysAgo.close) * 100
+      : 0;
+
+  return {
+    volumeMultiple: avgVolume > 0 ? today.volume / avgVolume : 0,
+    breakoutPct: high20 > 0 ? ((today.close - high20) / high20) * 100 : 0,
+    sidewaysRange: low20 > 0 ? ((high20 - low20) / low20) * 100 : 0,
+    gain5d,
+    changeRate: yesterday.close > 0 ? ((today.close - yesterday.close) / yesterday.close) * 100 : 0,
+    tailRatio: today.high > 0 ? (today.close / today.high) * 100 : 0,
+    gapRatio: yesterday.close > 0 ? (today.open / yesterday.close) * 100 : 100,
+    ma60Distance: ma60 > 0 ? ((today.close - ma60) / ma60) * 100 : 0,
+  };
+}
+
+/**
+ * 매수 적합도 평가 — 점수/등급/이유 생성
+ */
+function evaluateBuySignal(
+  conditions: ScreenerConditions,
+  m: SignalMetrics,
+): BuySignal {
+  let raw = 0;
+  const positives: string[] = [];
+  const warnings: string[] = [];
+
+  // breakout20 (max 32 = 22 base + 10 bonus)
+  if (conditions.breakout20) {
+    const bonus = Math.min(10, (m.breakoutPct / 3) * 10);
+    raw += 22 + bonus;
+    positives.push(
+      `20일 고가를 ${m.breakoutPct.toFixed(1)}% 상향 돌파 — 저항선 전환 신호`,
+    );
+  } else {
+    warnings.push(
+      `20일 돌파 미달 (현재 ${m.breakoutPct.toFixed(1)}% — 기준: 0% 초과) — 진입 시그널 없음`,
+    );
+  }
+
+  // sideways (max 28 = 20 base + 8 bonus)
+  if (conditions.sideways) {
+    const bonus = Math.max(0, 8 - (m.sidewaysRange / 15) * 8);
+    raw += 20 + bonus;
+    positives.push(
+      `20일 박스권 범위 ${m.sidewaysRange.toFixed(1)}% — 충분한 에너지 응축`,
+    );
+  } else {
+    warnings.push(
+      `횡보 범위 초과 (${m.sidewaysRange.toFixed(1)}% — 기준: 15% 이하) — 변동성 과다`,
+    );
+  }
+
+  // volumeSurge (max 20 = 20 bonus)
+  if (conditions.volumeSurge) {
+    const vm = m.volumeMultiple;
+    const bonus = vm >= 5 ? 20 : vm >= 3 ? 16 : 10;
+    raw += bonus;
+    positives.push(
+      `거래량 평균 대비 ${m.volumeMultiple.toFixed(1)}배 폭증 — 강한 수급 유입 확인`,
+    );
+  } else {
+    warnings.push(
+      `거래량 부족 (평균 ${m.volumeMultiple.toFixed(1)}배 — 기준: 2배 이상) — 가짜 돌파 위험`,
+    );
+  }
+
+  // aboveMA60 (max 21 = 15 base + 6 bonus)
+  if (conditions.aboveMA60) {
+    const bonus = Math.min(6, (m.ma60Distance / 5) * 6);
+    raw += 15 + bonus;
+    positives.push(
+      `MA60 대비 ${m.ma60Distance.toFixed(1)}% 위 — 중기 상승 추세 확인`,
+    );
+  } else {
+    warnings.push(
+      `MA60 하회 (${m.ma60Distance.toFixed(1)}% — 기준: 0% 초과) — 중기 추세 미확인`,
+    );
+  }
+
+  // turnoverMin (13, binary)
+  if (conditions.turnoverMin) {
+    raw += 13;
+    positives.push("거래대금 500억 이상 — 충분한 유동성 확보");
+  } else {
+    warnings.push("거래대금 부족 (기준: 500억 이상) — 유동성 리스크");
+  }
+
+  // notOverbought5d (10, binary)
+  if (conditions.notOverbought5d) {
+    raw += 10;
+    positives.push(
+      `5일 누적 ${m.gain5d.toFixed(1)}% 상승 — 추격매수 위험 없음`,
+    );
+  } else {
+    warnings.push(
+      `5일 누적 ${m.gain5d.toFixed(1)}% 급등 (기준: 15% 이하) — 추격매수 위험`,
+    );
+  }
+
+  // notOverheated (8, binary)
+  if (conditions.notOverheated) {
+    raw += 8;
+    positives.push(
+      `당일 등락률 ${m.changeRate.toFixed(1)}% — 과열 없이 안정적 상승`,
+    );
+  } else {
+    warnings.push(
+      `당일 ${m.changeRate.toFixed(1)}% 급등 (기준: 8% 미만) — 단기 과열 주의`,
+    );
+  }
+
+  // noGap (8, binary)
+  if (conditions.noGap) {
+    raw += 8;
+    positives.push(
+      `갭 없이 자연스러운 시초가 (전일비 +${(m.gapRatio - 100).toFixed(1)}%) — 안정적 진입`,
+    );
+  } else {
+    warnings.push(
+      `갭 상승 시초가 (전일비 +${(m.gapRatio - 100).toFixed(1)}% — 기준: 3% 이하) — 고점 진입 위험`,
+    );
+  }
+
+  // bullish (6, binary)
+  if (conditions.bullish) {
+    raw += 6;
+    positives.push("양봉 마감 — 당일 매수세 우위 확인");
+  } else {
+    warnings.push("음봉 마감 — 장중 매도 압력 우세");
+  }
+
+  // tailFilter (0–5 based on tailRatio)
+  if (conditions.tailFilter) {
+    const bonus = Math.round(((m.tailRatio - 99) / 1) * 5);
+    raw += Math.min(5, Math.max(0, bonus));
+    positives.push(
+      `윗꼬리 없이 강하게 마감 (고가 대비 ${m.tailRatio.toFixed(1)}%) — 매도 압력 없음`,
+    );
+  } else {
+    warnings.push(
+      `윗꼬리 존재 (고가 대비 ${m.tailRatio.toFixed(1)}% — 기준: 99% 이상) — 차익실현 신호`,
+    );
+  }
+
+  const MAX_RAW = 133;
+  const score = Math.min(100, Math.round((raw / MAX_RAW) * 100));
+
+  const grade: BuyGrade =
+    score >= 80 ? "A" : score >= 65 ? "B" : score >= 45 ? "C" : "F";
+
+  const summary =
+    grade === "A"
+      ? `강력 매수 신호 — ${conditions.breakout20 ? "20일 돌파" : ""}${conditions.volumeSurge ? "+거래량 폭증" : ""} 복합 확인`
+      : grade === "B"
+        ? "양호한 매수 신호 — 핵심 조건 대부분 충족"
+        : grade === "C"
+          ? "조건 부분 충족 — 추가 확인 후 진입 고려"
+          : "매수 신호 미달 — 대기 또는 관망 권고";
+
+  return { score, grade, summary, positives, warnings };
+}
+
+/**
  * 단일 종목 평가
  */
 export function evaluateStock(stock: StockData): ScreenerResult {
@@ -150,6 +342,8 @@ export function evaluateStock(stock: StockData): ScreenerResult {
   };
 
   const passCount = Object.values(conditions).filter(Boolean).length;
+  const metrics = calcSignalMetrics(today, yesterday, prior20, history);
+  const buySignal = evaluateBuySignal(conditions, metrics);
 
   return {
     ticker: stock.ticker,
@@ -161,6 +355,8 @@ export function evaluateStock(stock: StockData): ScreenerResult {
     turnover: today.turnover,
     conditions,
     passCount,
+    metrics,
+    buySignal,
   };
 }
 
