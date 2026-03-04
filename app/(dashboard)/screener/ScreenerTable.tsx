@@ -1186,11 +1186,30 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
   const [minPass, setMinPass] = useState(0);
   const [chart, setChart] = useState<ChartState>(null);
   const [activeTab, setActiveTab] = useState<ModalTab>("chart");
+  const [watchlistOnly, setWatchlistOnly] = useState(false);
+  const [watchlist, setWatchlist] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("screener-watchlist") ?? "[]") as string[];
+    } catch {
+      return [];
+    }
+  });
+
+  function toggleWatchlist(ticker: string) {
+    setWatchlist((prev) => {
+      const next = prev.includes(ticker)
+        ? prev.filter((t) => t !== ticker)
+        : [...prev, ticker];
+      localStorage.setItem("screener-watchlist", JSON.stringify(next));
+      return next;
+    });
+  }
 
   const sorted = useMemo(() => {
     const filtered = results.filter((r) => {
       if (marketFilter !== "ALL" && r.market !== marketFilter) return false;
       if (r.passCount < minPass) return false;
+      if (watchlistOnly && !watchlist.includes(r.ticker)) return false;
       return true;
     });
     return [...filtered].sort((a, b) => {
@@ -1200,7 +1219,15 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
       }
       return (a[sortKey] - b[sortKey]) * v;
     });
-  }, [results, sortKey, sortDir, marketFilter, minPass]);
+  }, [results, sortKey, sortDir, marketFilter, minPass, watchlistOnly, watchlist]);
+
+  const topStocks = useMemo(
+    () =>
+      sorted
+        .filter((r) => r.buySignal.grade === "A" || r.buySignal.grade === "B")
+        .slice(0, 3),
+    [sorted],
+  );
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -1257,6 +1284,19 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                 {f.label}
               </button>
             ))}
+
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+
+            <button
+              onClick={() => setWatchlistOnly((w) => !w)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                watchlistOnly
+                  ? "bg-yellow-400 text-white"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
+              }`}
+            >
+              ⭐ 관심{watchlist.length > 0 ? ` (${watchlist.length})` : ""}
+            </button>
           </div>
 
           {/* 우측: 카운트 + CSV */}
@@ -1274,6 +1314,78 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
             </button>
           </div>
         </div>
+
+        {/* TOP 3 추천 카드 */}
+        {topStocks.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              ⭐ 오늘의 추천 종목
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {topStocks.map((r) => {
+                const isWatchlisted = watchlist.includes(r.ticker);
+                return (
+                  <div
+                    key={r.ticker}
+                    className={`rounded-xl border-2 p-4 cursor-pointer transition-shadow hover:shadow-md ${
+                      r.buySignal.grade === "A"
+                        ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20"
+                        : "border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/20"
+                    }`}
+                    onClick={() => openChart(r)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <GradeBadge grade={r.buySignal.grade} score={r.buySignal.score} />
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                            r.market === "KOSPI"
+                              ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                              : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400"
+                          }`}
+                        >
+                          {r.market}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWatchlist(r.ticker);
+                        }}
+                        className="text-lg leading-none text-yellow-400 hover:text-yellow-500 transition-colors"
+                      >
+                        {isWatchlisted ? "★" : "☆"}
+                      </button>
+                    </div>
+                    <p className="font-bold text-gray-900 dark:text-gray-100 text-sm mb-1">
+                      {r.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-snug">
+                      {r.buySignal.summary}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span
+                        className={`font-semibold ${
+                          r.changeRate >= 0 ? "text-red-500" : "text-blue-500"
+                        }`}
+                      >
+                        {r.changeRate >= 0 ? "+" : ""}
+                        {r.changeRate.toFixed(2)}%
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        거래량 {r.metrics.volumeMultiple.toFixed(1)}배
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        돌파 {r.metrics.breakoutPct >= 0 ? "+" : ""}
+                        {r.metrics.breakoutPct.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 안내 */}
         <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -1296,6 +1408,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
               <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                 <thead className="bg-gray-50 dark:bg-gray-800/60">
                   <tr>
+                    <th className={th}>★</th>
                     <th className={th}>종목</th>
                     <th className={th}>시장</th>
                     <th className={th}>종가</th>
@@ -1329,73 +1442,96 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {sorted.map((r) => (
-                    <tr
-                      key={r.ticker}
-                      onClick={() => openChart(r)}
-                      className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors cursor-pointer"
-                    >
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                          {r.name}
-                        </div>
-                        <div className="text-gray-400 dark:text-gray-500 text-xs font-mono">
-                          {r.ticker}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            r.market === "KOSPI"
-                              ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                              : "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400"
-                          }`}
+                  {sorted.map((r) => {
+                    const rowBg =
+                      r.buySignal.grade === "A"
+                        ? "bg-red-50 dark:bg-red-950/20"
+                        : r.buySignal.grade === "B"
+                          ? "bg-orange-50 dark:bg-orange-950/20"
+                          : "";
+                    return (
+                      <tr
+                        key={r.ticker}
+                        onClick={() => openChart(r)}
+                        className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors cursor-pointer ${rowBg}`}
+                      >
+                        <td
+                          className="px-2 py-3 whitespace-nowrap text-center"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {r.market}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
-                        {r.close.toLocaleString()}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span
-                          className={`text-sm font-semibold ${
-                            r.changeRate >= 0
-                              ? "text-red-500 dark:text-red-400"
-                              : "text-blue-500 dark:text-blue-400"
-                          }`}
-                        >
-                          {r.changeRate >= 0 ? "+" : ""}
-                          {r.changeRate.toFixed(2)}%
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        {formatTurnover(r.turnover)}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                        {formatVolume(r.volume)}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <GradeBadge grade={r.buySignal.grade} score={r.buySignal.score} />
-                      </td>
-                      {CONDITION_KEYS.map((k) => (
-                        <td key={k} className="px-3 py-3 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => toggleWatchlist(r.ticker)}
+                            className="text-lg leading-none text-yellow-400 hover:text-yellow-500 transition-colors"
+                          >
+                            {watchlist.includes(r.ticker) ? "★" : "☆"}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                            {r.name}
+                          </div>
+                          <div className="text-gray-400 dark:text-gray-500 text-xs font-mono">
+                            {r.ticker}
+                          </div>
+                          {histories[r.ticker] && histories[r.ticker].length >= 2 && (
+                            <Sparkline data={histories[r.ticker]} />
+                          )}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
-                              r.conditions[k]
-                                ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
-                                : "bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-500"
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                              r.market === "KOSPI"
+                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                                : "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400"
                             }`}
                           >
-                            {r.conditions[k] ? "✓" : "✗"}
+                            {r.market}
                           </span>
                         </td>
-                      ))}
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <PassBadge count={r.passCount} />
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
+                          {r.close.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span
+                            className={`text-sm font-semibold ${
+                              r.changeRate >= 0
+                                ? "text-red-500 dark:text-red-400"
+                                : "text-blue-500 dark:text-blue-400"
+                            }`}
+                          >
+                            {r.changeRate >= 0 ? "+" : ""}
+                            {r.changeRate.toFixed(2)}%
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          {formatTurnover(r.turnover)}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                          {formatVolume(r.volume)}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <GradeBadge grade={r.buySignal.grade} score={r.buySignal.score} />
+                        </td>
+                        {CONDITION_KEYS.map((k) => (
+                          <td key={k} className="px-3 py-3 whitespace-nowrap text-center">
+                            <span
+                              title={getMetricTooltip(k, r)}
+                              className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold cursor-help ${
+                                r.conditions[k]
+                                  ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
+                                  : "bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-500"
+                              }`}
+                            >
+                              {r.conditions[k] ? "✓" : "✗"}
+                            </span>
+                          </td>
+                        ))}
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <PassBadge count={r.passCount} />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

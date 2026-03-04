@@ -124,7 +124,9 @@ export default function StockChartInteractive({ data }: Props) {
       title: "",
     });
 
-    // ── 20일 범위 마커 (시작 / 끝) ──────────────────────────────
+    // ── 20일 범위 마커 (시작 / 끝) + 돌파 마커 ────────────────────
+    const todayCandle = candles[n - 1];
+    const isBreakout = todayCandle !== undefined && todayCandle.close > high20;
     createSeriesMarkers(candleSeries, [
       {
         time: candles[rangeStart].date as `${number}-${number}-${number}`,
@@ -142,6 +144,18 @@ export default function StockChartInteractive({ data }: Props) {
         text: "20일 ▶",
         size: 1,
       },
+      ...(isBreakout && todayCandle
+        ? [
+            {
+              time: todayCandle.date as `${number}-${number}-${number}`,
+              position: "aboveBar" as const,
+              color: "#ef4444",
+              shape: "arrowDown" as const,
+              text: "돌파 ▲",
+              size: 2,
+            },
+          ]
+        : []),
     ]);
 
     // ── 거래량 히스토그램 ────────────────────────────────────────
@@ -284,6 +298,8 @@ export default function StockChartInteractive({ data }: Props) {
     range20.length > 0
       ? Math.round(range20.reduce((s, d) => s + d.volume, 0) / range20.length)
       : 0;
+  const todayClose = candles[n - 1]?.close ?? 0;
+  const isBreakout = high20 > 0 && todayClose > high20;
 
   return (
     <div className="relative">
@@ -313,6 +329,11 @@ export default function StockChartInteractive({ data }: Props) {
               <span className="text-gray-500 dark:text-gray-400">MA60</span>
             </span>
           </div>
+          {isBreakout && (
+            <span className="text-xs font-bold text-red-500 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded border border-red-300 dark:border-red-700 whitespace-nowrap">
+              ▲ 20일 고가 돌파
+            </span>
+          )}
         </div>
       )}
 

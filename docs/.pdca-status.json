@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-04T12:45:27.124Z",
+  "lastUpdated": "2026-03-04T12:56:46.304Z",
   "activeFeatures": [
     "turbo-break",
     "[...bknd]",
@@ -9,7 +9,8 @@
     "dashboard",
     "screener",
     "turbo-break Gap 분석",
-    "adapters"
+    "adapters",
+    "turbo-break Gap Analysis"
   ],
   "primaryFeature": "turbo-break",
   "features": {
@@ -27,9 +28,9 @@
       },
       "timestamps": {
         "started": "2026-03-02T14:40:06.994Z",
-        "lastUpdated": "2026-03-04T11:48:07.063Z"
+        "lastUpdated": "2026-03-04T12:47:58.998Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\market-data.ts"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\components\\stock-chart-interactive.tsx"
     },
     "[...bknd]": {
       "phase": "do",
@@ -92,7 +93,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T15:15:18.429Z",
-        "lastUpdated": "2026-03-04T12:45:27.124Z"
+        "lastUpdated": "2026-03-04T12:47:27.486Z"
       },
       "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\screener\\ScreenerTable.tsx"
     },
@@ -122,6 +123,20 @@
         "lastUpdated": "2026-03-02T17:14:34.377Z"
       },
       "lastFile": "C:/Users/jooladen/Desktop/cluade-code2/turbo-break/lib/adapters/yahoo-finance-adapter.ts"
+    },
+    "turbo-break Gap Analysis": {
+      "phase": "act",
+      "phaseNumber": 5,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-04T12:56:46.302Z",
+        "lastUpdated": "2026-03-04T12:56:46.304Z"
+      },
+      "previousPhase": "check",
+      "autoAdvanced": true
     }
   },
   "pipeline": {
@@ -132,7 +147,7 @@
   "session": {
     "startedAt": "2026-03-02T14:13:57.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-04T12:45:27.124Z"
+    "lastActivity": "2026-03-04T12:56:46.304Z"
   },
   "history": [
     {
@@ -877,6 +892,78 @@
       "timestamp": "2026-03-04T12:45:27.124Z",
       "feature": "screener",
       "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:04.311Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:09.375Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:15.019Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:23.161Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:43.726Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:46:59.493Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:47:04.600Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:47:27.486Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:47:41.428Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:47:49.729Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:47:58.998Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T12:56:46.304Z",
+      "feature": "turbo-break Gap Analysis",
+      "phase": "act",
       "action": "updated"
     }
   ]
