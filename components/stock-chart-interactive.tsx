@@ -168,12 +168,29 @@ export default function StockChartInteractive({ data }: Props) {
       scaleMargins: { top: 0.8, bottom: 0 },
     });
 
+    const avg20vol =
+      candles.slice(-21, -1).reduce((s, d) => s + d.volume, 0) / 20;
+
     volumeSeries.setData(
-      candles.map((d) => ({
-        time: d.date as `${number}-${number}-${number}`,
-        value: d.volume,
-        color: d.close >= d.open ? "#ef444440" : "#3b82f640",
-      })),
+      candles.map((d, i) => {
+        const isSurge = avg20vol > 0 && d.volume >= avg20vol * 2;
+        const isToday = i === candles.length - 1;
+        let color: string;
+        if (isToday && isSurge) {
+          color = "#f97316"; // 오늘 + surge: solid 주황
+        } else if (isToday) {
+          color = d.close >= d.open ? "#ef4444" : "#3b82f6"; // 오늘 일반: solid 색
+        } else if (isSurge) {
+          color = "#f9731680"; // surge: 반투명 주황
+        } else {
+          color = d.close >= d.open ? "#ef444428" : "#3b82f628"; // 일반: 연한
+        }
+        return {
+          time: d.date as `${number}-${number}-${number}`,
+          value: d.volume,
+          color,
+        };
+      }),
     );
 
     // ── MA 시리즈 ────────────────────────────────────────────────
@@ -355,6 +372,23 @@ export default function StockChartInteractive({ data }: Props) {
           <span className="text-orange-500 font-semibold">최고가 {fmt(high20)}</span>
           <span className="text-gray-400 dark:text-gray-500">|</span>
           <span>평균거래량 <span className="font-semibold text-gray-700 dark:text-gray-300">{fmt(avgVol20)}</span></span>
+          {avgVol20 > 0 && candles[n - 1] && (() => {
+            const todayVol = candles[n - 1]!.volume;
+            const multiple = todayVol / avgVol20;
+            const isSurge = multiple >= 2;
+            return (
+              <>
+                <span className="text-gray-400 dark:text-gray-500">|</span>
+                <span>
+                  📊 오늘 거래량{" "}
+                  <span className={`font-semibold ${isSurge ? "text-orange-500" : "text-gray-500 dark:text-gray-400"}`}>
+                    {multiple.toFixed(1)}배
+                  </span>
+                  {isSurge && <span className="ml-1 text-orange-500 font-bold">🔥 SURGE</span>}
+                </span>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

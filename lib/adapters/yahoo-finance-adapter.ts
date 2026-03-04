@@ -1,6 +1,7 @@
 import YahooFinance from "yahoo-finance2";
 import type { MarketDataAdapter } from "../market-data";
 import type { StockOHLCV } from "../screener-types";
+import logger from "../logger";
 import {
   KOSDAQ_TICKERS,
   KOSPI_TICKERS,
@@ -57,12 +58,12 @@ export const yahooFinanceAdapter: MarketDataAdapter = {
 
   async getHistory(ticker, days) {
     const yahooTicker = toYahooTicker(ticker);
-    process.stdout.write(`[Yahoo] ${yahooTicker} 요청중...\n`);
+    logger.info(`[Yahoo] ${yahooTicker} 요청중...`);
     const result = await yf.chart(yahooTicker, {
       period1: daysAgoStr(days),
       interval: "1d",
     });
-    process.stdout.write(`[Yahoo] ${yahooTicker} 완료 (${(result.quotes as ChartQuote[]).length}봉)\n`);
+    logger.info(`[Yahoo] ${yahooTicker} 완료 (${(result.quotes as ChartQuote[]).length}봉)`);
 
     const quotes = (result.quotes as ChartQuote[])
       .map(quoteToStockOHLCV)

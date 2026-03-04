@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
-import type { ScreenerResult, StockOHLCV, BuyGrade, BuySignal } from "@/lib/screener-types";
+import type { ScreenerResult, StockOHLCV, BuyGrade, BuySignal, SignalMetrics } from "@/lib/screener-types";
 import StockChartInteractive from "@/components/stock-chart-interactive";
 
 type SortKey = "changeRate" | "turnover" | "volume" | "passCount" | "buyScore";
 type SortDir = "asc" | "desc";
+
+function generateKeyPoint(m: SignalMetrics, _grade: BuyGrade): string {
+  if (m.volumeMultiple >= 5) return `거래량 ${m.volumeMultiple.toFixed(1)}배 폭발 💥`;
+  if (m.volumeMultiple >= 3) return `거래량 ${m.volumeMultiple.toFixed(1)}배로 큰손 유입 🔥`;
+  if (m.sidewaysRange < 6) return `${m.sidewaysRange.toFixed(1)}% 초좁은 횡보 후 돌파 🎯`;
+  if (m.breakoutPct > 3) return `20일 고가를 ${m.breakoutPct.toFixed(1)}% 강하게 돌파 🚀`;
+  if (m.sidewaysRange < 10) return `${m.sidewaysRange.toFixed(1)}% 횡보 끝에 에너지 폭발 ⚡`;
+  if (m.ma60Distance < 3) return `60일선 바로 위 황금 자리 ✨`;
+  return `${m.volumeMultiple.toFixed(1)}배 거래량으로 상승 확인 📈`;
+}
 
 const CONDITION_LABELS: Record<keyof ScreenerResult["conditions"], string> = {
   breakout20: "20일 돌파",
@@ -1187,13 +1197,16 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
   const [chart, setChart] = useState<ChartState>(null);
   const [activeTab, setActiveTab] = useState<ModalTab>("chart");
   const [watchlistOnly, setWatchlistOnly] = useState(false);
-  const [watchlist, setWatchlist] = useState<string[]>(() => {
+  const [watchlist, setWatchlist] = useState<string[]>([]);
+
+  useEffect(() => {
     try {
-      return JSON.parse(localStorage.getItem("screener-watchlist") ?? "[]") as string[];
+      const saved = JSON.parse(localStorage.getItem("screener-watchlist") ?? "[]") as string[];
+      setWatchlist(saved);
     } catch {
-      return [];
+      // ignore
     }
-  });
+  }, []);
 
   function toggleWatchlist(ticker: string) {
     setWatchlist((prev) => {
@@ -1363,23 +1376,17 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-snug">
                       {r.buySignal.summary}
                     </p>
-                    <div className="flex items-center gap-3 text-xs">
-                      <span
-                        className={`font-semibold ${
-                          r.changeRate >= 0 ? "text-red-500" : "text-blue-500"
-                        }`}
-                      >
-                        {r.changeRate >= 0 ? "+" : ""}
-                        {r.changeRate.toFixed(2)}%
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        거래량 {r.metrics.volumeMultiple.toFixed(1)}배
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">
-                        돌파 {r.metrics.breakoutPct >= 0 ? "+" : ""}
-                        {r.metrics.breakoutPct.toFixed(1)}%
-                      </span>
-                    </div>
+                    <p className="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
+                      {generateKeyPoint(r.metrics, r.buySignal.grade)}
+                    </p>
+                    <span
+                      className={`text-xs font-medium ${
+                        r.changeRate >= 0 ? "text-red-500" : "text-blue-500"
+                      }`}
+                    >
+                      {r.changeRate >= 0 ? "+" : ""}
+                      {r.changeRate.toFixed(2)}%
+                    </span>
                   </div>
                 );
               })}

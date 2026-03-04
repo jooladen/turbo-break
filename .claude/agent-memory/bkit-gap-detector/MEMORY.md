@@ -1,20 +1,32 @@
 # Gap Detector Memory - turbo-break
 
-## Latest Analysis (2026-03-04)
+## Latest Analysis (2026-03-04 v4)
 - Feature: turbo-break (20일 고가 돌파 스크리너)
-- Match Rate: 94%
-- Design Doc: v1.0 (2026-03-03)
-- Status: Design 이후 8개 주요 기능 추가됨, Design 문서 v2.0 업데이트 필요
+- Match Rate: 99% (Design v2.1 vs Implementation)
+- Design Doc: v2.1 (2026-03-04)
+- Analysis Doc: docs/03-analysis/turbo-break.analysis.md
+- Status: Design v2.1과 구현 거의 완벽 일치 (110항목 중 109 Match)
 
 ## Key Findings
-- Design의 모든 기본 스펙은 구현됨 (Missing = 0)
-- 주요 변경: ISR -> force-dynamic, ScreenerResult 타입 확장
-- 주요 추가: BuySignal 시스템, Yahoo/키움 어댑터, 다크모드, 차트 모달
-- Convention 위반: `process.stdout.write` in yahoo-finance-adapter.ts (로거 미사용)
-- Code smell: ScreenerTable.tsx 1200+ lines (분리 권장)
+- Design v2.1의 모든 기능 스펙이 구현됨 (Missing = 0)
+- v2.1 신규 7항목 모두 PASS (logger, hydration-safe watchlist, surge 색상, generateKeyPoint, TOP3 등락률, 거래량 배수, yahoo logger 전환)
+- Minor 차이 1건: KIWOOM_API_BASE_URL 기본값 (Design doc 문구 이슈)
+- RESOLVED: process.stdout.write -> lib/logger.ts 도입으로 완전 해결
+- RESOLVED: watchlist hydration -> useState([]) + useEffect 패턴
+- 남은 기술부채: ScreenerTable.tsx ~1580줄, .env.example 미존재, error.tsx/loading.tsx 미구현
 
 ## Project Conventions
 - pnpm only, no enum, no any, no console.log
 - type preferred over interface
 - Zod for external data validation
 - Dark mode: Tailwind v4 @custom-variant, localStorage "theme" key
+- Server Component default, "use client" only for interaction
+- Logging: lib/logger.ts (server-only), no direct process.stdout.write
+
+## Analysis History
+| Version | Date | Design Ver | Match Rate | Notes |
+|---------|------|-----------|-----------|-------|
+| v1 | 2026-03-03 | v1.0 | 97% | 기본 스펙 기준 |
+| v2 | 2026-03-04 | v1.0 | 94% | 추가 기능 포함 재분석 |
+| v3 | 2026-03-04 | v2.0 | 95% | Design v2.0 반영 후 재분석 |
+| v4 | 2026-03-04 | v2.1 | 99% | v2.1 신규 항목 모두 구현 확인 |
