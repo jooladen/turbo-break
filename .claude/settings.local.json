@@ -12,7 +12,8 @@
       "Bash(git log *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Skill(bkit:plan-plus)"
+      "Skill(bkit:plan-plus)",
+      "Skill(bkit:pdca)"
     ],
     "deny": [
       "Bash(rm -rf *)",
