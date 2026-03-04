@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import type { ScreenerResult, StockOHLCV, BuyGrade, BuySignal, SignalMetrics } from "@/lib/screener-types";
 import StockChartInteractive from "@/components/stock-chart-interactive";
 
@@ -1190,6 +1191,7 @@ type ChartState = {
 } | null;
 
 export default function ScreenerTable({ results, date, totalScanned, histories }: Props) {
+  const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("buyScore");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [marketFilter, setMarketFilter] = useState<"ALL" | "KOSPI" | "KOSDAQ">("ALL");
@@ -1474,8 +1476,19 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                           </button>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                            {r.name}
+                          <div className="flex items-center gap-2">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                              {r.name}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/intraday?ticker=${r.ticker}`);
+                              }}
+                              className="text-xs px-1.5 py-0.5 rounded border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shrink-0"
+                            >
+                              📊 ORB
+                            </button>
                           </div>
                           <div className="text-gray-400 dark:text-gray-500 text-xs font-mono">
                             {r.ticker}

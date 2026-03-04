@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-04T13:35:02.636Z",
+  "lastUpdated": "2026-03-04T15:56:17.966Z",
   "activeFeatures": [
     "turbo-break",
     "[...bknd]",
@@ -10,7 +10,8 @@
     "screener",
     "turbo-break Gap 분석",
     "adapters",
-    "turbo-break Gap Analysis"
+    "turbo-break Gap Analysis",
+    "intraday"
   ],
   "primaryFeature": "turbo-break",
   "features": {
@@ -28,9 +29,9 @@
       },
       "timestamps": {
         "started": "2026-03-02T14:40:06.994Z",
-        "lastUpdated": "2026-03-04T13:34:53.219Z"
+        "lastUpdated": "2026-03-04T14:26:43.928Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\logger.ts"
+      "lastFile": "C:/Users/jooladen/Desktop/cluade-code2/turbo-break/lib/intraday-calc.ts"
     },
     "[...bknd]": {
       "phase": "do",
@@ -93,9 +94,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T15:15:18.429Z",
-        "lastUpdated": "2026-03-04T13:28:31.586Z"
+        "lastUpdated": "2026-03-04T14:45:14.637Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\screener\\ScreenerTable.tsx"
+      "lastFile": "C:/Users/jooladen/Desktop/cluade-code2/turbo-break/app/(dashboard)/screener/ScreenerTable.tsx"
     },
     "turbo-break Gap 분석": {
       "phase": "act",
@@ -120,9 +121,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T16:15:21.468Z",
-        "lastUpdated": "2026-03-04T13:35:02.636Z"
+        "lastUpdated": "2026-03-04T15:51:06.046Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\adapters\\yahoo-finance-adapter.ts"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\adapters\\intraday-mock-adapter.ts"
     },
     "turbo-break Gap Analysis": {
       "phase": "act",
@@ -137,6 +138,19 @@
       },
       "previousPhase": "check",
       "autoAdvanced": true
+    },
+    "intraday": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-03-04T14:27:50.055Z",
+        "lastUpdated": "2026-03-04T15:56:17.966Z"
+      },
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\intraday\\IntradayView.tsx"
     }
   },
   "pipeline": {
@@ -147,7 +161,7 @@
   "session": {
     "startedAt": "2026-03-02T14:13:57.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-04T13:35:02.636Z"
+    "lastActivity": "2026-03-04T15:56:17.966Z"
   },
   "history": [
     {
@@ -1029,6 +1043,288 @@
     {
       "timestamp": "2026-03-04T13:35:02.636Z",
       "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:26:28.067Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:26:43.928Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:27:21.227Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:27:50.056Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:29:55.258Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:30:06.379Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:30:10.118Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:30:15.241Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:30:21.043Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:30:40.161Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:44:59.514Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:45:08.186Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:45:14.637Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:56:57.890Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:57:04.522Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:57:14.924Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T14:57:51.913Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:02:54.240Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:03:00.381Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:03:09.417Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:03:40.046Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:04:20.178Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:04:39.914Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:08:12.635Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:08:29.182Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:08:39.067Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:10:40.087Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:10:58.768Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:11:04.162Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:14:26.372Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:14:43.727Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:18:45.787Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:21:28.607Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:26:00.254Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:29:33.973Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:33:37.602Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:33:48.307Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:38:38.249Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:38:42.768Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:38:47.461Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:38:55.399Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:51:02.361Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:51:06.046Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:56:03.147Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:56:07.193Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:56:12.026Z",
+      "feature": "intraday",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-04T15:56:17.966Z",
+      "feature": "intraday",
       "phase": "do",
       "action": "updated"
     }
