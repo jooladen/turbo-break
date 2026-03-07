@@ -39,7 +39,7 @@ function quoteToStockOHLCV(q: ChartQuote): StockOHLCV | null {
     return null;
   }
   return {
-    date: q.date.toISOString().slice(0, 10),
+    date: toLocalDateStr(q.date),
     open: Math.round(q.open),
     high: Math.round(q.high),
     low: Math.round(q.low),
