@@ -1,18 +1,19 @@
 # Gap Detector Memory - turbo-break
 
 ## Latest Analysis (2026-03-07)
-- Feature: breakout-period-selector (돌파 기간 선택 5일/20일 콤보)
-- Match Rate: 100% (Design v1.0 vs Implementation, 52항목 전부 PASS)
+- Feature: breakout-period-selector (돌파 기간 선택 + 정렬 개선)
+- Match Rate: 100% (Design v1.0 + 정렬 개선 Plan, 65항목 전부 PASS)
 - Overall Score: 97% (Design 100% + Architecture 96% + Convention 96%)
 - Design Doc: docs/02-design/features/breakout-period-selector.design.md v1.0
-- Analysis Doc: docs/03-analysis/breakout-period-selector.analysis.md
-- Status: 6개 파일 변경, period 파라미터화 완벽 일치
+- Analysis Doc: docs/03-analysis/breakout-period-selector.analysis.md v1.1
+- Status: 6개 파일 변경, period 파라미터화 + 정렬 개선 완벽 일치
 
-## Key Findings (breakout-period-selector)
-- 52개 검증 항목 모두 PASS (Missing = 0)
+## Key Findings (breakout-period-selector + 정렬 개선)
+- 65개 검증 항목 모두 PASS (Missing = 0)
+- 정렬 개선 4요구사항: breakout20 1차 정렬, minPass=5, TOP3 돌파+A/B필터, 돌파 border+구분선
 - 상수 -> 함수 전환 패턴 (CONDITION_LABELS, CONDITION_META, EXPERT_DEFS, CONDITION_RAW_PATTERNS) 일관 적용
-- Added 3건: downloadCsv period 반영, getConditionInfo period 반영, periodDesc 변수 (자연스러운 확장)
-- ScreenerTable.tsx 1681줄 (+22 from v6)
+- Added 6건: downloadCsv, getConditionInfo, periodDesc, 차트 period, 검증 테이블, 미래 봉
+- ScreenerTable.tsx 1689줄
 - 기존 기술부채 유지: ScreenerTable.tsx 크기, .env.example 미존재, error.tsx/loading.tsx 미구현
 
 ## Project Conventions
@@ -47,6 +48,7 @@
 | Version | Date | Design Ver | Match Rate | Notes |
 |---------|------|-----------|-----------|-------|
 | v1 | 2026-03-07 | v1.0 | 100% | 52항목 전부 PASS, 6파일 변경 |
+| v1.1 | 2026-03-07 | v1.0+정렬 | 100% | 정렬 개선 5항목 추가, 총 65항목 PASS |
 
 ### orb-intraday (인트라데이 스크리너)
 | Version | Date | Design Ver | Match Rate | Notes |

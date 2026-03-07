@@ -1214,7 +1214,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
   const [sortKey, setSortKey] = useState<SortKey>("buyScore");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [marketFilter, setMarketFilter] = useState<"ALL" | "KOSPI" | "KOSDAQ">("ALL");
-  const [minPass, setMinPass] = useState(0);
+  const [minPass, setMinPass] = useState(5);
   const [chart, setChart] = useState<ChartState>(null);
   const [activeTab, setActiveTab] = useState<ModalTab>("chart");
   const [watchlistOnly, setWatchlistOnly] = useState(false);
@@ -1247,6 +1247,11 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
       return true;
     });
     return [...filtered].sort((a, b) => {
+      // 1차: 돌파 종목 우선
+      const aB = a.conditions.breakout20 ? 1 : 0;
+      const bB = b.conditions.breakout20 ? 1 : 0;
+      if (aB !== bB) return bB - aB;
+      // 2차: 선택된 정렬 기준
       const v = sortDir === "desc" ? -1 : 1;
       if (sortKey === "buyScore") {
         return (a.buySignal.score - b.buySignal.score) * v;
@@ -1258,7 +1263,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
   const topStocks = useMemo(
     () =>
       sorted
-        .filter((r) => r.buySignal.grade === "A" || r.buySignal.grade === "B")
+        .filter((r) => r.conditions.breakout20 && (r.buySignal.grade === "A" || r.buySignal.grade === "B"))
         .slice(0, 3),
     [sorted],
   );
@@ -1473,18 +1478,21 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {sorted.map((r) => {
+                  {sorted.map((r, idx) => {
                     const rowBg =
                       r.buySignal.grade === "A"
                         ? "bg-red-50 dark:bg-red-950/20"
                         : r.buySignal.grade === "B"
                           ? "bg-orange-50 dark:bg-orange-950/20"
                           : "";
+                    const isBreakout = r.conditions.breakout20;
+                    const prevIsBreakout = idx > 0 && sorted[idx - 1].conditions.breakout20;
+                    const isBoundary = !isBreakout && prevIsBreakout;
                     return (
                       <tr
                         key={r.ticker}
                         onClick={() => openChart(r)}
-                        className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors cursor-pointer ${rowBg}`}
+                        className={`hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-colors cursor-pointer ${rowBg} ${isBreakout ? "border-l-[3px] border-l-red-500" : ""} ${isBoundary ? "border-t-2 border-t-gray-300 dark:border-t-gray-600" : ""}`}
                       >
                         <td
                           className="px-2 py-3 whitespace-nowrap text-center"
