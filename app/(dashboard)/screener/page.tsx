@@ -21,7 +21,7 @@ const ALL_CONDITION_KEYS: Array<keyof ScreenerConditions> = [
 ];
 
 type Props = {
-  searchParams: Promise<{ market?: string; date?: string; adapter?: string; period?: string; conds?: string; volMul?: string }>;
+  searchParams: Promise<{ market?: string; date?: string; adapter?: string; period?: string; conds?: string; volMul?: string; swRange?: string }>;
 };
 
 export default async function ScreenerPage({ searchParams }: Props) {
@@ -53,6 +53,10 @@ export default async function ScreenerPage({ searchParams }: Props) {
   const rawVolMul = Number(params.volMul);
   const volMultiplier = VOL_MUL_OPTIONS.includes(rawVolMul) ? rawVolMul : 2;
 
+  const SW_RANGE_OPTIONS = [7, 8, 9, 10, 15, 20];
+  const rawSwRange = Number(params.swRange);
+  const swRange = SW_RANGE_OPTIONS.includes(rawSwRange) ? rawSwRange : 15;
+
   // conds 파라미터 파싱: 없으면 기본값 ["breakout"]
   const rawConds = params.conds;
   const activeConditions: Array<keyof ScreenerConditions> = rawConds
@@ -67,7 +71,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
 
   const adapter = createAdapter(adapterType);
   const stocks = await fetchAllStocks(adapter, market, 65, date);
-  const results = evaluateAllStocks(stocks, period, activeConditions, volMultiplier);
+  const results = evaluateAllStocks(stocks, period, activeConditions, volMultiplier, swRange / 100);
 
   // 차트 모달용 — 과거 조회 시 기준일 이후 5봉(미래)까지 포함
   const today = toLocalDateStr(new Date());
@@ -122,7 +126,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
         </div>
 
         {/* 조회 컨트롤 */}
-        <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} currentVolMul={String(volMultiplier)} />
+        <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} currentVolMul={String(volMultiplier)} currentSwRange={String(swRange)} currentConds={activeConditions.join(",")} />
 
         {/* 요약 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -161,6 +165,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
           period={period}
           activeConditions={activeConditions}
           volMultiplier={volMultiplier}
+          swRange={swRange}
         />
       </div>
     </div>

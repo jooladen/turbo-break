@@ -21,6 +21,7 @@ type Props = {
   period: number;
   activeConditions: Array<keyof ScreenerConditions>;
   volMultiplier: number;
+  swRange: number;
 };
 
 type ModalTab = "chart" | "beginner" | "expert";
@@ -31,7 +32,7 @@ type ChartState = {
   result: ScreenerResult;
 } | null;
 
-export default function ScreenerTable({ results, date, totalScanned, histories, period, activeConditions, volMultiplier }: Props) {
+export default function ScreenerTable({ results, date, totalScanned, histories, period, activeConditions, volMultiplier, swRange }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [sortKey, setSortKey] = useState<SortKey>("buyScore");
@@ -145,26 +146,26 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
 
             {CONDITION_KEYS.map((key) => {
               const checked = requiredConditions.has(key);
-              const isBreakout = key === "breakout";
+              const isLocked = key === "breakout" || key === "sideways";
               return (
                 <button
                   key={key}
                   onClick={() => {
-                    if (isBreakout) return;
+                    if (isLocked) return;
                     const next = new Set(requiredConditions);
                     if (next.has(key)) next.delete(key);
                     else next.add(key);
                     updateConditions([...next]);
                   }}
                   className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    isBreakout
+                    isLocked
                       ? "bg-red-500 text-white cursor-default opacity-90"
                       : checked
                         ? "bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900"
                         : "bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
                   }`}
                 >
-                  {isBreakout ? `🔒 ${condLabels[key]}` : `${condLabels[key]}${checked ? "✓" : ""}`}
+                  {isLocked ? `🔒 ${condLabels[key]}` : `${condLabels[key]}${checked ? "✓" : ""}`}
                 </button>
               );
             })}
@@ -325,7 +326,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                         <th key={k} className={th}>
                           <span className="hidden lg:inline">{labels[k]}</span>
                           <span className="lg:hidden">{labels[k].slice(0, 2)}</span>
-                          <ConditionTooltip condKey={k} period={period} volMultiplier={volMultiplier} />
+                          <ConditionTooltip condKey={k} period={period} volMultiplier={volMultiplier} swRange={swRange} />
                         </th>
                       );
                     })}
@@ -423,7 +424,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                         {CONDITION_KEYS.map((k) => (
                           <td key={k} className="px-3 py-3 whitespace-nowrap text-center">
                             <span
-                              title={getMetricTooltip(k, r, volMultiplier)}
+                              title={getMetricTooltip(k, r, volMultiplier, swRange)}
                               className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold cursor-help ${
                                 r.conditions[k]
                                   ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
@@ -453,7 +454,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
           </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {CONDITION_KEYS.map((k, i) => (
-              <LegendItem key={k} condKey={k} index={i} period={period} volMultiplier={volMultiplier} />
+              <LegendItem key={k} condKey={k} index={i} period={period} volMultiplier={volMultiplier} swRange={swRange} />
             ))}
           </div>
         </div>
@@ -532,10 +533,10 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                 </>
               )}
               {activeTab === "beginner" && (
-                <BuySignalPanel signal={chart.result.buySignal} period={period} volMultiplier={volMultiplier} />
+                <BuySignalPanel signal={chart.result.buySignal} period={period} volMultiplier={volMultiplier} swRange={swRange} />
               )}
               {activeTab === "expert" && (
-                <ExpertPanel result={chart.result} period={period} volMultiplier={volMultiplier} />
+                <ExpertPanel result={chart.result} period={period} volMultiplier={volMultiplier} swRange={swRange} />
               )}
             </div>
           </div>

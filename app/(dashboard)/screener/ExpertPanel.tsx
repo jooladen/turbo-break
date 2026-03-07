@@ -4,10 +4,10 @@ import type { ScreenerResult } from "@/lib/screener-types";
 import { CONDITION_KEYS, getExpertDefs } from "./screener-constants";
 import { GradeBadge } from "./screener-components";
 
-export default function ExpertPanel({ result, period, volMultiplier = 2 }: { result: ScreenerResult; period: number; volMultiplier?: number }) {
+export default function ExpertPanel({ result, period, volMultiplier = 2, swRange = 15 }: { result: ScreenerResult; period: number; volMultiplier?: number; swRange?: number }) {
   const passCount = result.passCount;
   const total = 10;
-  const expertDefs = getExpertDefs(period, volMultiplier);
+  const expertDefs = getExpertDefs(period, volMultiplier, swRange);
   const sortedDefs = CONDITION_KEYS.map((key) => expertDefs.find((d) => d.key === key)!);
 
   return (

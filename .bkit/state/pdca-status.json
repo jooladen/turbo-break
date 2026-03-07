@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-07T15:00:21.991Z",
+  "lastUpdated": "2026-03-07T16:35:32.547Z",
   "activeFeatures": [
     "turbo-break",
     "[...bknd]",
@@ -31,9 +31,9 @@
       },
       "timestamps": {
         "started": "2026-03-02T14:40:06.994Z",
-        "lastUpdated": "2026-03-07T15:00:21.990Z"
+        "lastUpdated": "2026-03-07T16:33:42.775Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\components\\stock-chart-interactive.tsx"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\screener.ts"
     },
     "[...bknd]": {
       "phase": "do",
@@ -96,9 +96,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T15:15:18.429Z",
-        "lastUpdated": "2026-03-07T14:56:18.240Z"
+        "lastUpdated": "2026-03-07T16:35:32.547Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\screener\\screener-components.tsx"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\screener\\screener-constants.ts"
     },
     "turbo-break Gap 분석": {
       "phase": "act",
@@ -123,7 +123,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T16:15:21.468Z",
-        "lastUpdated": "2026-03-07T04:19:13.196Z"
+        "lastUpdated": "2026-03-07T15:24:21.919Z"
       },
       "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\adapters\\yahoo-finance-adapter.ts"
     },
@@ -197,7 +197,7 @@
   "session": {
     "startedAt": "2026-03-02T14:13:57.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-07T15:00:21.991Z"
+    "lastActivity": "2026-03-07T16:35:32.547Z"
   },
   "history": [
     {
@@ -2645,6 +2645,456 @@
     {
       "timestamp": "2026-03-07T15:00:21.990Z",
       "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:24:21.919Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:34:26.154Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:34:34.955Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:34:43.001Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:37:54.207Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:42:29.198Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:53:59.608Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:06.997Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:17.807Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:27.228Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:36.894Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:42.290Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:50.563Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:54:57.611Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:05.019Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:12.973Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:18.663Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:25.945Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:32.220Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:39.192Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:45.311Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:55:51.142Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:01.989Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:09.441Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:23.778Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:30.245Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:41.377Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:50.820Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:56:57.821Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:04.380Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:11.174Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:24.304Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:31.951Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:40.069Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:47.492Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:57:54.440Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:02.429Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:09.211Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:16.987Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:24.655Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:30.915Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:37.874Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:44.819Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:58:51.668Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:59:01.095Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T15:59:07.814Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:23.809Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:30.506Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:37.336Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:44.069Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:51.876Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:00:58.934Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:01:06.467Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:12.315Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:19.192Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:27.128Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:34.810Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:44.645Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:15:52.750Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:19:40.403Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:23:21.207Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:23:24.574Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:23:27.150Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:19.597Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:22.449Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:25.418Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:28.561Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:31.428Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:33:42.775Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:34:18.415Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:34:21.462Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:34:24.478Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:34:27.321Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:34:29.838Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T16:35:32.547Z",
+      "feature": "screener",
       "phase": "do",
       "action": "updated"
     }

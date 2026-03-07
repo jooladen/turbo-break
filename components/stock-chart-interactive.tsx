@@ -40,6 +40,19 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
+/** queryDate가 데이터에 없을 때 (휴일·날짜 밀림 등) 직전 가장 가까운 거래일 인덱스 반환 */
+function findPivotIdx(candles: StockOHLCV[], queryDate: string | undefined, fallback: number): number {
+  if (!queryDate) return fallback;
+  const exact = candles.findIndex((d) => d.date === queryDate);
+  if (exact >= 0) return exact;
+  // 가장 가까운 이전 거래일 (candles는 oldest→newest 순)
+  let best = -1;
+  for (let i = 0; i < candles.length; i++) {
+    if (candles[i].date <= queryDate) best = i;
+  }
+  return best >= 0 ? best : fallback;
+}
+
 export default function StockChartInteractive({ data, period = 20, queryDate, volMultiplier = 2 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -96,10 +109,7 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
     const n = candles.length;
 
     // ── N일 구간 계산 (기준일 기반) ─────────────────────────────
-    const pivotIdx = queryDate
-      ? candles.findIndex((d) => d.date === queryDate)
-      : n - 1;
-    const effectiveEnd = pivotIdx >= 0 ? pivotIdx : n - 1;
+    const effectiveEnd = findPivotIdx(candles, queryDate, n - 1);
     const rangeStart = Math.max(0, effectiveEnd - period);
     const rangeEnd = Math.max(0, effectiveEnd - 1);
     const range20 = candles.slice(rangeStart, rangeEnd + 1);
@@ -351,11 +361,8 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
   // N일 구간 정보 (render용 — data prop에서 계산)
   const candles = data.length > 0 ? [...data].reverse() : [];
   const n = candles.length;
-  // 기준일 인덱스 (미래 봉 제외)
-  const pivotIdx = queryDate
-    ? candles.findIndex((d) => d.date === queryDate)
-    : n - 1;
-  const effectiveEnd = pivotIdx >= 0 ? pivotIdx : n - 1;
+  // 기준일 인덱스 (미래 봉 제외, 정확한 날짜 없으면 직전 거래일)
+  const effectiveEnd = findPivotIdx(candles, queryDate, n - 1);
   const futureBars = candles.slice(effectiveEnd + 1);
   const rangeStart = Math.max(0, effectiveEnd - period);
   const rangeEnd = Math.max(0, effectiveEnd - 1);
@@ -442,6 +449,11 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
                 <span className="text-gray-400 dark:text-gray-500">|</span>
                 <span>
                   📊 오늘 거래량{" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{fmt(todayVol)}</span>
+                  <span className="text-gray-400 dark:text-gray-500 mx-0.5">/</span>
+                  <span className="text-gray-400 dark:text-gray-500">평균</span>{" "}
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">{fmt(avgVol20)}</span>
+                  <span className="text-gray-400 dark:text-gray-500 mx-0.5">=</span>
                   <span className={`font-semibold ${isSurge ? "text-orange-500" : "text-gray-500 dark:text-gray-400"}`}>
                     {multiple.toFixed(1)}배
                   </span>
@@ -546,7 +558,7 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
               </tr>
               <tr className="bg-blue-50/50 dark:bg-blue-900/10 border-t border-gray-200 dark:border-gray-700">
                 <td colSpan={5} className="px-2 py-1.5 text-right text-gray-500 dark:text-gray-400">
-                  오늘 거래량 / {period}일 평균 =
+                  오늘 거래량 <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">{fmt(todayVol)}</span> / {period}일 평균 <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">{fmt(avgVol20)}</span> =
                 </td>
                 <td className="px-2 py-1.5 text-right font-mono font-bold text-orange-500">
                   {avgVol20 > 0 ? (todayVol / avgVol20).toFixed(2) : "—"}배

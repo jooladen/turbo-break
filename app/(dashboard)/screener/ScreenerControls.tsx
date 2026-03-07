@@ -10,6 +10,8 @@ type Props = {
   adapterType: AdapterType;
   currentPeriod: string;
   currentVolMul: string;
+  currentSwRange: string;
+  currentConds: string;
 };
 
 const ADAPTER_OPTIONS: Array<{ value: AdapterType; label: string }> = [
@@ -26,9 +28,11 @@ type Prefs = {
 };
 
 const VOL_MUL_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+const SW_RANGE_OPTIONS = [7, 8, 9, 10, 15, 20];
 
-export default function ScreenerControls({ market, date, adapterType, currentPeriod, currentVolMul }: Props) {
+export default function ScreenerControls({ market, date, adapterType, currentPeriod, currentVolMul, currentSwRange, currentConds }: Props) {
   const [localMarket, setLocalMarket] = useState(market);
+  const [localConds, setLocalConds] = useState(currentConds);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -62,8 +66,9 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
         </div>
       )}
 
-      {/* 시장 선택 — 숨김 input으로 전달 */}
+      {/* 숨김 input으로 전달 */}
       <input type="hidden" name="market" value={localMarket} />
+      <input type="hidden" name="conds" value={localConds} />
 
       <div className="flex items-center gap-1">
         {(["ALL", "KOSPI", "KOSDAQ"] as const).map((m) => (
@@ -113,6 +118,28 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
         ))}
       </select>
 
+      {/* 횡보 범위 — 변경 시 sideways 조건 필터도 자동 활성화 */}
+      <select
+        name="swRange"
+        defaultValue={currentSwRange}
+        onChange={() => {
+          setLocalConds((prev) => {
+            const parts = prev ? prev.split(",") : ["breakout"];
+            if (!parts.includes("sideways")) parts.push("sideways");
+            return parts.join(",");
+          });
+          // setState 후 requestSubmit은 다음 렌더에서 실행
+          setTimeout(() => formRef.current?.requestSubmit(), 0);
+        }}
+        className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {SW_RANGE_OPTIONS.map((v) => (
+          <option key={v} value={v}>
+            횡보 {v}%
+          </option>
+        ))}
+      </select>
+
       <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
 
       {/* 날짜 */}
@@ -120,6 +147,7 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
         type="date"
         name="date"
         defaultValue={date}
+        onChange={() => setTimeout(() => formRef.current?.requestSubmit(), 0)}
         className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 

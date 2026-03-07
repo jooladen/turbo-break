@@ -79,7 +79,7 @@ function generateHistory(
 
 /**
  * 20일 고가 돌파 패턴을 가진 종목 히스토리 생성
- * - 1~60일 전: 박스권 횡보 (≤15% 범위)
+ * - 1~60일 전: 박스권 횡보 (≤swRange% 범위)
  * - 오늘(0): 박스권 돌파 + 거래량 폭증
  */
 function generateBreakoutStock(

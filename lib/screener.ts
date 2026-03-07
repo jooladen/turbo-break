@@ -10,7 +10,7 @@ import type {
 
 const TURNOVER_MIN = 50_000_000_000; // 500억 원
 const DEFAULT_VOL_MULTIPLIER = 2;
-const SIDEWAYS_MAX_RANGE = 0.15; // 15%
+const DEFAULT_SW_RANGE = 0.15; // 15%
 const TAIL_FILTER_RATIO = 0.99;
 const MA60_PERIOD = 60;
 const OVERHEAT_MAX_RATE = 8; // %
@@ -32,15 +32,15 @@ function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[], period: numbe
 
 /**
  * 횡보 필터 (조건 2)
- * (20일 최고가 - 20일 최저가) / 20일 최저가 ≤ 15%
+ * (N일 최고가 - N일 최저가) / N일 최저가 ≤ maxRange
  */
-function checkSideways(prior20: StockOHLCV[], period: number): boolean {
+function checkSideways(prior20: StockOHLCV[], period: number, maxRange: number): boolean {
   if (prior20.length < period) return false;
   const slice = prior20.slice(0, period);
   const high20 = Math.max(...slice.map((d) => d.high));
   const low20 = Math.min(...slice.map((d) => d.low));
   if (low20 === 0) return false;
-  return (high20 - low20) / low20 <= SIDEWAYS_MAX_RANGE;
+  return (high20 - low20) / low20 <= maxRange;
 }
 
 /**
@@ -183,6 +183,7 @@ function evaluateBuySignal(
   m: SignalMetrics,
   period: number,
   volMultiplier: number,
+  swRange: number,
 ): BuySignal {
   let raw = 0;
   const positives: string[] = [];
@@ -202,15 +203,16 @@ function evaluateBuySignal(
   }
 
   // sideways (max 28 = 20 base + 8 bonus)
+  const swRangePct = swRange * 100;
   if (conditions.sideways) {
-    const bonus = Math.max(0, 8 - (m.sidewaysRange / 15) * 8);
+    const bonus = Math.max(0, 8 - (m.sidewaysRange / swRangePct) * 8);
     raw += 20 + bonus;
     positives.push(
       `${period}일 박스권 범위 ${m.sidewaysRange.toFixed(1)}% — 충분한 에너지 응축`,
     );
   } else {
     warnings.push(
-      `횡보 범위 초과 (${m.sidewaysRange.toFixed(1)}% — 기준: 15% 이하) — 변동성 과다`,
+      `횡보 범위 초과 (${m.sidewaysRange.toFixed(1)}% — 기준: ${swRangePct}% 이하) — 변동성 과다`,
     );
   }
 
@@ -327,7 +329,7 @@ function evaluateBuySignal(
 /**
  * 단일 종목 평가
  */
-export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult {
+export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER, swRange = DEFAULT_SW_RANGE): ScreenerResult {
   const history = stock.history;
   const today = history[0];
   const yesterday = history[1];
@@ -335,7 +337,7 @@ export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMult
 
   const conditions: ScreenerConditions = {
     breakout: checkBreakout20(today, prior20, period, volMultiplier),
-    sideways: checkSideways(prior20, period),
+    sideways: checkSideways(prior20, period, swRange),
     volumeSurge: checkVolumeSurge(today, prior20, period, volMultiplier),
     tailFilter: checkTailFilter(today),
     turnoverMin: checkTurnoverMin(today),
@@ -348,7 +350,7 @@ export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMult
 
   const passCount = Object.values(conditions).filter(Boolean).length;
   const metrics = calcSignalMetrics(today, yesterday, prior20, history, period);
-  const buySignal = evaluateBuySignal(conditions, metrics, period, volMultiplier);
+  const buySignal = evaluateBuySignal(conditions, metrics, period, volMultiplier, swRange);
 
   return {
     ticker: stock.ticker,
@@ -369,9 +371,9 @@ export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMult
 /**
  * 스크리너 실행: 10가지 조건 모두 통과한 종목만 반환 (API 용)
  */
-export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult[] {
+export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER, swRange = DEFAULT_SW_RANGE): ScreenerResult[] {
   return stocks
-    .map((s) => evaluateStock(s, period, volMultiplier))
+    .map((s) => evaluateStock(s, period, volMultiplier, swRange))
     .filter((r) => r.passCount === 10)
     .sort((a, b) => b.changeRate - a.changeRate);
 }
@@ -385,8 +387,9 @@ export function evaluateAllStocks(
   period = DEFAULT_PERIOD,
   requiredConditions?: Array<keyof ScreenerConditions>,
   volMultiplier = DEFAULT_VOL_MULTIPLIER,
+  swRange = DEFAULT_SW_RANGE,
 ): ScreenerResult[] {
-  const evaluated = stocks.map((s) => evaluateStock(s, period, volMultiplier));
+  const evaluated = stocks.map((s) => evaluateStock(s, period, volMultiplier, swRange));
 
   const filtered = requiredConditions
     ? evaluated.filter((r) =>

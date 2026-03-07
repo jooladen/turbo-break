@@ -54,13 +54,14 @@ export function getMetricTooltip(
   condKey: keyof ScreenerResult["conditions"],
   r: ScreenerResult,
   volMultiplier = 2,
+  swRange = 15,
 ): string {
   const m = r.metrics;
   switch (condKey) {
     case "breakout":
       return `${m.breakoutPct >= 0 ? "+" : ""}${m.breakoutPct.toFixed(1)}% 돌파 / 기준: 0% 초과`;
     case "sideways":
-      return `범위 ${m.sidewaysRange.toFixed(1)}% / 기준: 15% 이하`;
+      return `범위 ${m.sidewaysRange.toFixed(1)}% / 기준: ${swRange}% 이하`;
     case "volumeSurge":
       return `${m.volumeMultiple.toFixed(1)}배 / 기준: ${volMultiplier}배 이상`;
     case "aboveMA60":
@@ -201,7 +202,7 @@ export function toKidText(raw: string, period: number): { icon: string; title: s
 }
 
 // ── 초딩용 경고 설명 ──
-export function toKidWarning(raw: string, period: number, volMultiplier = 2): { icon: string; title: string; story: string; fix: string } {
+export function toKidWarning(raw: string, period: number, volMultiplier = 2, swRange = 15): { icon: string; title: string; story: string; fix: string } {
   const periodLabel = period <= 1 ? "하루" : period <= 2 ? "이틀" : period <= 5 ? `${period}일` : "한 달";
   const map: Array<[RegExp, (m: RegExpMatchArray) => { icon: string; title: string; story: string; fix: string }]> = [
     [
@@ -228,7 +229,7 @@ export function toKidWarning(raw: string, period: number, volMultiplier = 2): { 
         icon: "🎢",
         title: `가격이 최근 ${periodLabel} 동안 ${m[1]}%나 들쑥날쑥했어요`,
         story: `요즘 이 주식 가격이 롤러코스터처럼 오르락내리락 했어요. 좋은 돌파 신호가 나오려면 먼저 가격이 좁은 범위에서 조용히 안정됐다가 한 번에 터져야 해요. 에너지가 충분히 응축되지 않은 상태라 오늘 오른 것도 일시적일 수 있어요.`,
-        fix: "가격이 15% 이내 좁은 범위에서 조용히 움직이다가 터지는 날을 기다려요!",
+        fix: `가격이 ${swRange}% 이내 좁은 범위에서 조용히 움직이다가 터지는 날을 기다려요!`,
       }),
     ],
     [

@@ -36,8 +36,8 @@ export function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-export function ConditionTooltip({ condKey, period, volMultiplier = 2 }: { condKey: keyof ScreenerResult["conditions"]; period: number; volMultiplier?: number }) {
-  const meta = getConditionMeta(period, volMultiplier)[condKey];
+export function ConditionTooltip({ condKey, period, volMultiplier = 2, swRange = 15 }: { condKey: keyof ScreenerResult["conditions"]; period: number; volMultiplier?: number; swRange?: number }) {
+  const meta = getConditionMeta(period, volMultiplier, swRange)[condKey];
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   return (
@@ -76,13 +76,15 @@ export function LegendItem({
   index,
   period,
   volMultiplier = 2,
+  swRange = 15,
 }: {
   condKey: keyof ScreenerResult["conditions"];
   index: number;
   period: number;
   volMultiplier?: number;
+  swRange?: number;
 }) {
-  const meta = getConditionMeta(period, volMultiplier)[condKey];
+  const meta = getConditionMeta(period, volMultiplier, swRange)[condKey];
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   return (

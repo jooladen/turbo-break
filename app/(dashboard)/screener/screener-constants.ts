@@ -36,7 +36,7 @@ export type ConditionMeta = {
   detail: string;
 };
 
-export function getConditionMeta(period: number, volMultiplier = 2): Record<keyof ScreenerResult["conditions"], ConditionMeta> {
+export function getConditionMeta(period: number, volMultiplier = 2, swRange = 15): Record<keyof ScreenerResult["conditions"], ConditionMeta> {
   const periodLabel = period <= 1 ? "하루" : period <= 2 ? "이틀" : period <= 5 ? `${period}일` : "한 달";
   return {
   breakout: {
@@ -51,7 +51,7 @@ export function getConditionMeta(period: number, volMultiplier = 2): Record<keyo
     score: 9,
     easy: `주가가 ${periodLabel} 동안 조용히 비슷한 가격 범위에서 움직였어요. 스프링이 꾹 눌려 있다가 튀어오르기 직전 같은 상태예요 🌀`,
     detail:
-      `돌파 전 충분한 에너지가 응축됐다는 증거입니다. ${period}일간 주가 변동폭이 ±15% 이내로 유지됐다는 것은 매도 물량이 소화되고 저점 매수자들이 물량을 쌓아왔다는 신호입니다. 횡보 기간이 길수록 돌파 후 상승 폭도 커지는 경향이 있습니다. 갑자기 급등한 종목보다 훨씬 안전한 진입 패턴입니다.`,
+      `돌파 전 충분한 에너지가 응축됐다는 증거입니다. ${period}일간 주가 변동폭이 ±${swRange}% 이내로 유지됐다는 것은 매도 물량이 소화되고 저점 매수자들이 물량을 쌓아왔다는 신호입니다. 횡보 기간이 길수록 돌파 후 상승 폭도 커지는 경향이 있습니다. 갑자기 급등한 종목보다 훨씬 안전한 진입 패턴입니다.`,
   },
   volumeSurge: {
     label: "거래량↑",
@@ -177,7 +177,7 @@ export type ExpertDef = {
   proTip: string;
 };
 
-export function getExpertDefs(period: number, volMultiplier = 2): ExpertDef[] {
+export function getExpertDefs(period: number, volMultiplier = 2, swRange = 15): ExpertDef[] {
   const periodDesc = period <= 1 ? "약 1일" : period <= 5 ? `약 ${period}일` : "약 1달";
   return [
   {
@@ -202,14 +202,14 @@ export function getExpertDefs(period: number, volMultiplier = 2): ExpertDef[] {
     name: "박스권 횡보 (VCP)",
     category: "추세",
     catColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
-    target: `${period}일 변동폭 ≤ 15% (고가-저가)/저가`,
+    target: `${period}일 변동폭 ≤ ${swRange}% (고가-저가)/저가`,
     getCurrent: (r) =>
-      `변동폭 ${r.metrics.sidewaysRange.toFixed(1)}% (기준: ≤ 15%) ${r.conditions.sideways ? "✅" : "❌"}`,
-    getBarPct: (r) => Math.min(100, Math.max(0, 100 - (r.metrics.sidewaysRange / 15) * 100)),
-    what: `최근 ${period}일 동안 최고가와 최저가의 차이가 저가 대비 15% 이내인지 확인합니다. 이를 VCP(Volatility Contraction Pattern) 또는 박스권 패턴이라 합니다.`,
+      `변동폭 ${r.metrics.sidewaysRange.toFixed(1)}% (기준: ≤ ${swRange}%) ${r.conditions.sideways ? "✅" : "❌"}`,
+    getBarPct: (r) => Math.min(100, Math.max(0, 100 - (r.metrics.sidewaysRange / swRange) * 100)),
+    what: `최근 ${period}일 동안 최고가와 최저가의 차이가 저가 대비 ${swRange}% 이내인지 확인합니다. 이를 VCP(Volatility Contraction Pattern) 또는 박스권 패턴이라 합니다.`,
     why: "마크 미너비니가 체계화한 VCP는 돌파 전 변동성이 수축되는 구간입니다. 이 기간 동안 약한 손(weak hands)의 물량이 소화되고, 강한 손(strong hands)이 매집합니다. 수축이 길수록 돌파 후 상승 에너지도 커집니다.",
-    good: `5~10% 범위가 이상적. 범위가 좁을수록 에너지가 더 응축된 상태.`,
-    bad: "15% 초과 = 변동성 과다, 방향성 없음. 20% 이상이면 하락 추세 중 반등일 가능성 높음.",
+    good: `5~${Math.min(swRange, 15)}% 범위가 이상적. 범위가 좁을수록 에너지가 더 응축된 상태.`,
+    bad: `${swRange}% 초과 = 변동성 과다, 방향성 없음. ${swRange + 5}% 이상이면 하락 추세 중 반등일 가능성 높음.`,
     proTip: "횡보 기간 중 거래량이 점차 줄어드는 패턴(Volume Dry-up)이 함께 나타나면 더욱 강력한 신호입니다.",
   },
   {

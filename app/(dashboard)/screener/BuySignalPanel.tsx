@@ -4,7 +4,7 @@ import type { BuySignal } from "@/lib/screener-types";
 import { GRADE_CONFIG } from "./screener-constants";
 import { toKidText, toKidWarning, getConditionInfo } from "./screener-utils";
 
-export default function BuySignalPanel({ signal, period, volMultiplier = 2 }: { signal: BuySignal; period: number; volMultiplier?: number }) {
+export default function BuySignalPanel({ signal, period, volMultiplier = 2, swRange = 15 }: { signal: BuySignal; period: number; volMultiplier?: number; swRange?: number }) {
   const cfg = GRADE_CONFIG[signal.grade];
   const totalConditions = signal.positives.length + signal.warnings.length;
 
@@ -122,7 +122,7 @@ export default function BuySignalPanel({ signal, period, volMultiplier = 2 }: { 
           </div>
           <div className="space-y-3">
             {signal.warnings.map((raw, i) => {
-              const { icon, title, story, fix } = toKidWarning(raw, period, volMultiplier);
+              const { icon, title, story, fix } = toKidWarning(raw, period, volMultiplier, swRange);
               const info = getConditionInfo(raw, period);
               return (
                 <div
@@ -176,7 +176,7 @@ export default function BuySignalPanel({ signal, period, volMultiplier = 2 }: { 
           </p>
           <div className="space-y-2">
             {signal.warnings.slice(0, 3).map((raw, i) => {
-              const { icon, fix } = toKidWarning(raw, period, volMultiplier);
+              const { icon, fix } = toKidWarning(raw, period, volMultiplier, swRange);
               return (
                 <div key={i} className="flex items-start gap-2.5 bg-white/70 dark:bg-gray-800/50 rounded-xl px-3 py-2.5">
                   <span className="text-lg flex-shrink-0">{icon}</span>
