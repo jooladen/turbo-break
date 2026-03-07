@@ -1242,8 +1242,9 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
   const sorted = useMemo(() => {
     const filtered = results.filter((r) => {
       if (marketFilter !== "ALL" && r.market !== marketFilter) return false;
-      if (r.passCount < minPass) return false;
-      if (watchlistOnly && !watchlist.includes(r.ticker)) return false;
+      const isWatched = watchlist.includes(r.ticker);
+      if (watchlistOnly && !isWatched) return false;
+      if (!isWatched && r.passCount < minPass) return false;
       return true;
     });
     return [...filtered].sort((a, b) => {
@@ -1334,7 +1335,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                   : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
               }`}
             >
-              ⭐ 관심{watchlist.length > 0 ? ` (${watchlist.length})` : ""}
+              ⭐ 관심{(() => { const c = results.filter((r) => watchlist.includes(r.ticker) && (marketFilter === "ALL" || r.market === marketFilter)).length; return c > 0 ? ` (${c})` : ""; })()}
             </button>
           </div>
 
