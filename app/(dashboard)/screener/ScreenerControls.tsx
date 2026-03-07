@@ -9,6 +9,7 @@ type Props = {
   date: string;
   adapterType: AdapterType;
   currentPeriod: string;
+  currentVolMul: string;
 };
 
 const ADAPTER_OPTIONS: Array<{ value: AdapterType; label: string }> = [
@@ -24,7 +25,9 @@ type Prefs = {
   adapter: AdapterType;
 };
 
-export default function ScreenerControls({ market, date, adapterType, currentPeriod }: Props) {
+const VOL_MUL_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+export default function ScreenerControls({ market, date, adapterType, currentPeriod, currentVolMul }: Props) {
   const [localMarket, setLocalMarket] = useState(market);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -88,8 +91,26 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
         onChange={() => formRef.current?.requestSubmit()}
         className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
+        <option value="1">1일 돌파</option>
+        <option value="2">2일 돌파</option>
+        <option value="3">3일 돌파</option>
+        <option value="4">4일 돌파</option>
         <option value="5">5일 돌파</option>
         <option value="20">20일 돌파</option>
+      </select>
+
+      {/* 거래량 배수 */}
+      <select
+        name="volMul"
+        defaultValue={currentVolMul}
+        onChange={() => formRef.current?.requestSubmit()}
+        className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {VOL_MUL_OPTIONS.map((v) => (
+          <option key={v} value={v}>
+            거래량 {v}배
+          </option>
+        ))}
       </select>
 
       <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />

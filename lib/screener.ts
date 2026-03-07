@@ -9,7 +9,7 @@ import type {
 } from "./screener-types";
 
 const TURNOVER_MIN = 50_000_000_000; // 500억 원
-const VOLUME_SURGE_MULTIPLIER = 2;
+const DEFAULT_VOL_MULTIPLIER = 2;
 const SIDEWAYS_MAX_RANGE = 0.15; // 15%
 const TAIL_FILTER_RATIO = 0.99;
 const MA60_PERIOD = 60;
@@ -19,13 +19,15 @@ const OVERBOUGHT_5D_MAX = 0.15; // 15%
 const DEFAULT_PERIOD = 5;
 
 /**
- * 20일 고가 돌파 (조건 1)
- * 오늘 종가 > history[1..20] 중 최고가
+ * N일 고가 돌파 (조건 1)
+ * 오늘 종가 > history[1..N] 중 최고가 AND 거래량 ≥ N일 평균 × multiplier
  */
-function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[], period: number): boolean {
+function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[], period: number, volMultiplier: number): boolean {
   if (prior20.length < period) return false;
-  const high20 = Math.max(...prior20.slice(0, period).map((d) => d.high));
-  return today.close > high20;
+  const slice = prior20.slice(0, period);
+  const high20 = Math.max(...slice.map((d) => d.high));
+  const avgVolume = slice.reduce((sum, d) => sum + d.volume, 0) / period;
+  return today.close > high20 && today.volume >= avgVolume * volMultiplier;
 }
 
 /**
@@ -45,12 +47,12 @@ function checkSideways(prior20: StockOHLCV[], period: number): boolean {
  * 거래량 폭증 (조건 3)
  * 당일 거래량 ≥ 20일 평균 거래량 × 2
  */
-function checkVolumeSurge(today: StockOHLCV, prior20: StockOHLCV[], period: number): boolean {
+function checkVolumeSurge(today: StockOHLCV, prior20: StockOHLCV[], period: number, multiplier: number): boolean {
   if (prior20.length < period) return false;
   const avgVolume =
     prior20.slice(0, period).reduce((sum, d) => sum + d.volume, 0) /
     period;
-  return today.volume >= avgVolume * VOLUME_SURGE_MULTIPLIER;
+  return today.volume >= avgVolume * multiplier;
 }
 
 /**
@@ -180,13 +182,14 @@ function evaluateBuySignal(
   conditions: ScreenerConditions,
   m: SignalMetrics,
   period: number,
+  volMultiplier: number,
 ): BuySignal {
   let raw = 0;
   const positives: string[] = [];
   const warnings: string[] = [];
 
-  // breakout20 (max 32 = 22 base + 10 bonus)
-  if (conditions.breakout20) {
+  // breakout (max 32 = 22 base + 10 bonus)
+  if (conditions.breakout) {
     const bonus = Math.min(10, (m.breakoutPct / 3) * 10);
     raw += 22 + bonus;
     positives.push(
@@ -221,7 +224,7 @@ function evaluateBuySignal(
     );
   } else {
     warnings.push(
-      `거래량 부족 (평균 ${m.volumeMultiple.toFixed(1)}배 — 기준: 2배 이상) — 가짜 돌파 위험`,
+      `거래량 부족 (평균 ${m.volumeMultiple.toFixed(1)}배 — 기준: ${volMultiplier}배 이상) — 가짜 돌파 위험`,
     );
   }
 
@@ -311,7 +314,7 @@ function evaluateBuySignal(
 
   const summary =
     grade === "A"
-      ? `강력 매수 신호 — ${conditions.breakout20 ? `${period}일 돌파` : ""}${conditions.volumeSurge ? "+거래량 폭증" : ""} 복합 확인`
+      ? `강력 매수 신호 — ${conditions.breakout ? `${period}일 돌파` : ""}${conditions.volumeSurge ? "+거래량 폭증" : ""} 복합 확인`
       : grade === "B"
         ? "양호한 매수 신호 — 핵심 조건 대부분 충족"
         : grade === "C"
@@ -324,16 +327,16 @@ function evaluateBuySignal(
 /**
  * 단일 종목 평가
  */
-export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD): ScreenerResult {
+export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult {
   const history = stock.history;
   const today = history[0];
   const yesterday = history[1];
   const prior20 = history.slice(1); // 오늘 제외한 이전 데이터
 
   const conditions: ScreenerConditions = {
-    breakout20: checkBreakout20(today, prior20, period),
+    breakout: checkBreakout20(today, prior20, period, volMultiplier),
     sideways: checkSideways(prior20, period),
-    volumeSurge: checkVolumeSurge(today, prior20, period),
+    volumeSurge: checkVolumeSurge(today, prior20, period, volMultiplier),
     tailFilter: checkTailFilter(today),
     turnoverMin: checkTurnoverMin(today),
     aboveMA60: checkAboveMA60(today, history),
@@ -345,7 +348,7 @@ export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD): Screen
 
   const passCount = Object.values(conditions).filter(Boolean).length;
   const metrics = calcSignalMetrics(today, yesterday, prior20, history, period);
-  const buySignal = evaluateBuySignal(conditions, metrics, period);
+  const buySignal = evaluateBuySignal(conditions, metrics, period, volMultiplier);
 
   return {
     ticker: stock.ticker,
@@ -366,18 +369,32 @@ export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD): Screen
 /**
  * 스크리너 실행: 10가지 조건 모두 통과한 종목만 반환 (API 용)
  */
-export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD): ScreenerResult[] {
+export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult[] {
   return stocks
-    .map((s) => evaluateStock(s, period))
+    .map((s) => evaluateStock(s, period, volMultiplier))
     .filter((r) => r.passCount === 10)
     .sort((a, b) => b.changeRate - a.changeRate);
 }
 
 /**
  * 전체 종목 평가 반환: passCount 내림차순, 동점이면 등락률 내림차순 (UI 용)
+ * requiredConditions가 주어지면 해당 조건들을 모두 통과한 종목만 반환
  */
-export function evaluateAllStocks(stocks: StockData[], period = DEFAULT_PERIOD): ScreenerResult[] {
-  return stocks
-    .map((s) => evaluateStock(s, period))
-    .sort((a, b) => b.passCount - a.passCount || b.changeRate - a.changeRate);
+export function evaluateAllStocks(
+  stocks: StockData[],
+  period = DEFAULT_PERIOD,
+  requiredConditions?: Array<keyof ScreenerConditions>,
+  volMultiplier = DEFAULT_VOL_MULTIPLIER,
+): ScreenerResult[] {
+  const evaluated = stocks.map((s) => evaluateStock(s, period, volMultiplier));
+
+  const filtered = requiredConditions
+    ? evaluated.filter((r) =>
+        requiredConditions.every((key) => r.conditions[key]),
+      )
+    : evaluated;
+
+  return filtered.sort(
+    (a, b) => b.passCount - a.passCount || b.changeRate - a.changeRate,
+  );
 }

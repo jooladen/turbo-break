@@ -16,7 +16,7 @@ export type StockData = {
 };
 
 export type ScreenerConditions = {
-  breakout20: boolean; // 조건 1: 20일 고가 돌파
+  breakout: boolean; // 조건 1: 20일 고가 돌파
   sideways: boolean; // 조건 2: 횡보 필터 (박스권 범위 ≤ 15%)
   volumeSurge: boolean; // 조건 3: 거래량 폭증 (≥ 20일 평균 × 2)
   tailFilter: boolean; // 조건 4: 윗꼬리 제거 (종가 ≥ 당일 고가 × 0.99)

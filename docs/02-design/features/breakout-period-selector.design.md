@@ -11,13 +11,14 @@
 ## 1. 아키텍처 개요
 
 ```
-URL ?period=5 (기본값)
-  → page.tsx: searchParams에서 period 읽기
-  → evaluateAllStocks(stocks, period)
-  → evaluateStock(stock, period)
-      → checkBreakout(today, priorN, period)
+URL ?period=5&volMul=2 (기본값)
+  → page.tsx: searchParams에서 period, volMul 읽기
+  → evaluateAllStocks(stocks, period, requiredConditions, volMultiplier)
+  → evaluateStock(stock, period, volMultiplier)
+      → checkBreakout(today, priorN, period, volMultiplier)  // 가격 + 거래량
       → checkSideways(priorN, period)
-      → checkVolumeSurge(today, priorN, period)
+      → checkVolumeSurge(today, priorN, period, volMultiplier)
+  → ScreenerControls: currentVolMul prop → 거래량 배수 콤보
   → ScreenerTable: period prop → 동적 라벨/메타/텍스트
 ```
 
@@ -67,25 +68,27 @@ const DEFAULT_PERIOD = 5;
 #### 2.2.2 함수 시그니처 변경
 
 ```ts
-// checkBreakout20 → period 인자 추가
+// checkBreakout20 → period + volMultiplier 인자 추가
 function checkBreakout20(
   today: StockOHLCV,
   prior: StockOHLCV[],
-  period: number,  // 추가
-): { pass: boolean; breakoutPct: number }
+  period: number,
+  volMultiplier: number,  // 가격 돌파 + 거래량 배수 조건 통합
+): boolean
 
 // checkSideways → period 인자 추가
 function checkSideways(
   prior: StockOHLCV[],
-  period: number,  // 추가
-): { pass: boolean; sidewaysRange: number }
+  period: number,
+): boolean
 
-// checkVolumeSurge → period 인자 추가
+// checkVolumeSurge → period + multiplier 인자 추가
 function checkVolumeSurge(
   today: StockOHLCV,
   prior: StockOHLCV[],
-  period: number,  // 추가
-): { pass: boolean; volumeMultiple: number }
+  period: number,
+  multiplier: number,  // 사용자 선택 거래량 배수
+): boolean
 ```
 
 #### 2.2.3 함수 내부 변경
@@ -111,11 +114,11 @@ export function evaluateStock(stock: StockData): ScreenerResult | null
 export function evaluateAllStocks(stocks: StockData[]): ScreenerResult[]
 
 // After
-export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD): ScreenerResult | null
-export function evaluateAllStocks(stocks: StockData[], period = DEFAULT_PERIOD): ScreenerResult[]
+export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult | null
+export function evaluateAllStocks(stocks: StockData[], period = DEFAULT_PERIOD, requiredConditions?, volMultiplier = DEFAULT_VOL_MULTIPLIER): ScreenerResult[]
 ```
 
-`evaluateStock` 내부에서 `period`를 `checkBreakout20`, `checkSideways`, `checkVolumeSurge`에 전달.
+`evaluateStock` 내부에서 `period`와 `volMultiplier`를 `checkBreakout20`, `checkSideways`, `checkVolumeSurge`에 전달.
 
 #### 2.2.5 evaluateBuySignal 메시지 동적화
 
@@ -126,7 +129,7 @@ export function evaluateAllStocks(stocks: StockData[], period = DEFAULT_PERIOD):
 export function evaluateBuySignal(c: ScreenerConditions, m: SignalMetrics): BuySignal
 
 // After
-export function evaluateBuySignal(c: ScreenerConditions, m: SignalMetrics, period: number): BuySignal
+export function evaluateBuySignal(c: ScreenerConditions, m: SignalMetrics, period: number, volMultiplier: number): BuySignal
 ```
 
 텍스트 변경 예시:
@@ -154,17 +157,19 @@ export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD): Scree
 
 ### 2.3 `app/(dashboard)/screener/ScreenerControls.tsx` — 콤보 추가
 
-#### 2.3.1 period 콤보 select 추가
+#### 2.3.1 period + volMul 콤보 select 추가
 
 ```tsx
-<select
-  name="period"
-  defaultValue={currentPeriod}
-  onChange={() => formRef.current?.requestSubmit()}
-  className="..."
->
+<select name="period" onChange={() => formRef.current?.requestSubmit()}>
+  <option value="1">1일 돌파</option>
+  <option value="2">2일 돌파</option>
+  <option value="3">3일 돌파</option>
+  <option value="4">4일 돌파</option>
   <option value="5">5일 돌파</option>
   <option value="20">20일 돌파</option>
+</select>
+<select name="volMul" onChange={() => formRef.current?.requestSubmit()}>
+  {VOL_MUL_OPTIONS.map(v => <option value={v}>거래량 {v}배</option>)}
 </select>
 ```
 
@@ -178,12 +183,13 @@ type ScreenerControlsProps = {
   currentAdapter: string;
 };
 
-// After — period 추가
+// After — period + volMul 추가
 type ScreenerControlsProps = {
   currentMarket: string;
   currentDate: string;
   currentAdapter: string;
-  currentPeriod: string;  // "5" | "20"
+  currentPeriod: string;   // "1" | "2" | "3" | "4" | "5" | "20"
+  currentVolMul: string;   // "0.5" | "1" | ... | "5"
 };
 ```
 
@@ -192,14 +198,18 @@ type ScreenerControlsProps = {
 ### 2.4 `app/(dashboard)/screener/page.tsx` — period 파이프라인
 
 ```ts
-// searchParams에서 period 읽기
-const period = Number(sp.period) === 20 ? 20 : 5;  // 기본값 5
+// searchParams에서 period, volMul 읽기
+const PERIOD_OPTIONS = [1, 2, 3, 4, 5, 20];
+const period = PERIOD_OPTIONS.includes(rawPeriod) ? rawPeriod : 5;
+
+const VOL_MUL_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+const volMultiplier = VOL_MUL_OPTIONS.includes(rawVolMul) ? rawVolMul : 2;
 
 // evaluateAllStocks에 전달
-const results = evaluateAllStocks(stocks, period);
+const results = evaluateAllStocks(stocks, period, activeConditions, volMultiplier);
 
 // ScreenerControls에 전달
-<ScreenerControls currentPeriod={String(period)} ... />
+<ScreenerControls currentPeriod={String(period)} currentVolMul={String(volMultiplier)} ... />
 
 // ScreenerTable에 전달
 <ScreenerTable results={results} period={period} ... />
@@ -459,16 +469,17 @@ toKidWarning(text, period)
 ### 2.6 `app/api/screener/route.ts` — API 파라미터
 
 ```ts
-// querySchema에 period 추가
+// querySchema에 period + volMul 추가
 const querySchema = z.object({
   market: z.enum(["KOSPI", "KOSDAQ", "ALL"]).default("ALL"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   adapter: z.enum(["yahoo", "kiwoom", "mock"]).optional(),
-  period: z.coerce.number().refine(v => v === 5 || v === 20).default(5),  // 추가
+  period: z.coerce.number().refine(v => [1,2,3,4,5,20].includes(v)).default(5),
+  volMul: z.coerce.number().refine(v => [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5].includes(v)).default(2),
 });
 
-// runScreener에 period 전달
-const passed = runScreener(stocks, parsed.data.period);
+// runScreener에 period + volMul 전달
+const passed = runScreener(stocks, parsed.data.period, parsed.data.volMul);
 ```
 
 ---
@@ -510,6 +521,6 @@ const passed = runScreener(stocks, parsed.data.period);
 | 5 | 테이블 라벨 | "5일 돌파?" / "20일 돌파?" 동적 표시 |
 | 6 | 모달 초보자탭 | "일주일 동안" / "한 달 동안" 동적 표시 |
 | 7 | 모달 전문가탭 | "5일 고가 돌파" / "20일 고가 돌파" 동적 표시 |
-| 8 | BuySignal 텍스트 | "5일 고가를 ...% 돌파" / "20일 고가를 ...% 돌파" |
-| 9 | URL 파라미터 | `?period=5` 또는 `?period=20` 유지 |
-| 10 | API | `/api/screener?period=5` 정상 응답 |
+| 8 | BuySignal 텍스트 | "N일 고가를 ...% 돌파" + "기준: N배 이상" |
+| 9 | URL 파라미터 | `?period=N&volMul=N` 유지 |
+| 10 | API | `/api/screener?period=5&volMul=2` 정상 응답 |

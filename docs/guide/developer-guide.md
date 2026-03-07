@@ -1,4 +1,4 @@
-# 개발자 가이드: 20일 고가 돌파 스크리너
+# 개발자 가이드: N일 고가 돌파 스크리너
 
 > 로직을 왜 그렇게 짰는지, 안 그랬으면 어떤 문제가 생겼는지까지 설명합니다.
 
@@ -24,9 +24,10 @@ pnpm build        # 프로덕션 빌드
 | URL | 설명 |
 |-----|------|
 | `/screener` | 스크리너 메인 페이지 |
-| `/api/screener` | JSON API (market, date 파라미터) |
+| `/api/screener` | JSON API (market, date, period, volMul 파라미터) |
 | `/api/screener?market=KOSPI` | KOSPI만 필터 |
 | `/api/screener?date=2026-03-01` | 특정 날짜 |
+| `/api/screener?period=3&volMul=1.5` | 3일 돌파 + 거래량 1.5배 |
 
 ---
 
@@ -83,7 +84,7 @@ type StockData = {
 
 ```typescript
 type ScreenerConditions = {
-  breakout20: boolean;
+  breakout: boolean;   // N일 고가 돌파 + 거래량 배수
   sideways: boolean;
   // ... 10개 boolean
 };
@@ -91,11 +92,11 @@ type ScreenerConditions = {
 
 **왜 boolean 10개를 별도 타입으로 묶었나?**
 
-`ScreenerResult.conditions` 로 UI에서 `.conditions.breakout20` 처럼 접근합니다.
+`ScreenerResult.conditions` 로 UI에서 `.conditions.breakout` 처럼 접근합니다.
 `passCount`는 `Object.values(conditions).filter(Boolean).length` 로 자동 계산됩니다.
 조건이 추가될 때 타입 추가 → 자동으로 passCount에 반영됩니다.
 
-**안 했으면?** `result.breakout20, result.sideways...` 10개 필드가 ScreenerResult
+**안 했으면?** `result.breakout, result.sideways...` 10개 필드가 ScreenerResult
 최상위에 흩어지고, "조건만 뽑아서 순회"하는 로직이 복잡해집니다.
 
 ---
@@ -105,18 +106,24 @@ type ScreenerConditions = {
 #### 조건 1: `checkBreakout20`
 
 ```typescript
-function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[]): boolean {
-  if (prior20.length < LOOKBACK_DAYS) return false;
-  const high20 = Math.max(...prior20.slice(0, LOOKBACK_DAYS).map((d) => d.high));
-  return today.close > high20;  // ← 종가 vs 최고가 비교
+function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[], period: number, volMultiplier: number): boolean {
+  if (prior20.length < period) return false;
+  const slice = prior20.slice(0, period);
+  const high20 = Math.max(...slice.map((d) => d.high));
+  const avgVolume = slice.reduce((sum, d) => sum + d.volume, 0) / period;
+  return today.close > high20 && today.volume >= avgVolume * volMultiplier;
 }
 ```
+
+**가격 돌파 + 거래량 배수 통합 조건**: 종가가 N일 고가를 넘으면서 동시에 거래량이 N일 평균의 volMultiplier배 이상이어야 합니다.
+
+- `period`: 1~5, 20일 중 사용자 선택 (기본값 5)
+- `volMultiplier`: 0.5~5배 중 사용자 선택 (기본값 2)
 
 **왜 `today.high > high20`이 아니라 `today.close > high20`인가?**
 
 `high`(장중 최고가)는 순간적으로 튀어올랐다가 내려올 수 있습니다(윗꼬리).
-`close`(종가)가 20일 고가를 넘어야 "실제로 박스권을 뚫었다"는 의미가 됩니다.
-종가 기준이어야 다음날 진입 판단 근거가 됩니다.
+`close`(종가)가 N일 고가를 넘어야 "실제로 박스권을 뚫었다"는 의미가 됩니다.
 
 **안 했으면?** 장중에만 잠깐 고가를 넘고 결국 아래로 내려온 종목도 "돌파"로 잡혀
 허위 신호(false positive)가 늘어납니다.
@@ -149,9 +156,13 @@ return range <= SIDEWAYS_MAX_RANGE; // 0.15 = 15%
 #### 조건 3: `checkVolumeSurge` (거래량 폭증)
 
 ```typescript
-const avgVolume = prior20.slice(0, 20).reduce(...) / 20;
-return today.volume >= avgVolume * VOLUME_SURGE_MULTIPLIER; // 2배
+function checkVolumeSurge(today: StockOHLCV, prior20: StockOHLCV[], period: number, multiplier: number): boolean {
+  const avgVolume = prior20.slice(0, period).reduce((sum, d) => sum + d.volume, 0) / period;
+  return today.volume >= avgVolume * multiplier;
+}
 ```
+
+`multiplier`는 사용자가 콤보에서 선택한 값(0.5~5배, 기본 2배).
 
 **왜 거래량이 중요한가?**
 
@@ -159,11 +170,10 @@ return today.volume >= avgVolume * VOLUME_SURGE_MULTIPLIER; // 2배
 1. **수급 동반 상승**: 실제로 많은 사람이 사고 있어서 오름 → 지속 가능
 2. **허수 상승**: 거래량 없이 소수가 가격만 올림 → 금방 빠짐
 
-거래량이 평균의 2배 이상이어야 "진짜 관심"입니다.
-
-**왜 오늘 거래량 vs 20일 평균인가?**
-오늘 하루만 보면 종목 규모가 달라서 의미가 없습니다(대형주는 원래 거래량이 많음).
-평균 대비 비율로 계산해야 "평소보다 얼마나 폭발했나"를 알 수 있습니다.
+**왜 배수를 조절할 수 있게 했나?**
+시장 상황에 따라 2배가 너무 엄격하거나 너무 완화할 수 있습니다.
+- 조용한 시장: 1~1.5배로 낮춰서 더 많은 종목 발굴
+- 과열 시장: 3~5배로 높여서 진짜 강한 수급만 필터
 
 **안 했으면?** 거래량 없는 상승 → 다음날 바로 이익 실현 물량에 눌려 하락.
 
@@ -559,7 +569,7 @@ generateBreakoutStock(seed, basePrice, baseTurnover):
 | 조건 | 경계값 통과 | 경계값 실패 |
 |------|------------|------------|
 | sideways | 범위 = 15.0% → 통과 | 범위 = 15.1% → 실패 |
-| volumeSurge | 거래량 = 평균 × 2.0 → 통과 | 거래량 = 평균 × 1.99 → 실패 |
+| volumeSurge (2배 기준) | 거래량 = 평균 × 2.0 → 통과 | 거래량 = 평균 × 1.99 → 실패 |
 | tailFilter | 종가 = 고가 × 0.99 → 통과 | 종가 = 고가 × 0.989 → 실패 |
 | notOverheated | 상승률 = 7.99% → 통과 | 상승률 = 8.0% → 실패 |
 | noGap | 시가 = 전일종가 × 1.03 → 통과 | 시가 = 전일종가 × 1.031 → 실패 |
@@ -666,12 +676,14 @@ function runBacktest(
 #### 6-6. 조건 커스터마이징
 
 ```typescript
-// 현재는 상수로 고정된 값들을 사용자가 변경 가능하도록
+// 돌파 기간과 거래량 배수는 이미 콤보로 선택 가능 (v2 구현 완료)
+// 나머지 상수도 추후 UI에서 변경 가능하도록 확장
 type ScreenerConfig = {
   overheatMaxRate: number;    // 기본 8%
   sidewaysMaxRange: number;   // 기본 15%
   turnoverMin: number;        // 기본 500억
-  volumeSurgeMultiplier: number; // 기본 2배
+  // period: 1~5, 20 (구현 완료 - URL ?period=N)
+  // volMultiplier: 0.5~5 (구현 완료 - URL ?volMul=N)
 };
 ```
 

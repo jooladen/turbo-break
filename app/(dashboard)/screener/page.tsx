@@ -1,5 +1,5 @@
 import { createAdapter, fetchAllStocks } from "@/lib/market-data";
-import type { StockOHLCV } from "@/lib/screener-types";
+import type { ScreenerConditions, StockOHLCV } from "@/lib/screener-types";
 import { toLocalDateStr } from "@/lib/date-utils";
 import { evaluateAllStocks } from "@/lib/screener";
 import ThemeToggle from "@/components/theme-toggle";
@@ -15,8 +15,13 @@ export const dynamic = "force-dynamic";
 
 type AdapterType = "yahoo" | "kiwoom" | "mock";
 
+const ALL_CONDITION_KEYS: Array<keyof ScreenerConditions> = [
+  "breakout", "sideways", "volumeSurge", "tailFilter", "turnoverMin",
+  "aboveMA60", "notOverheated", "bullish", "noGap", "notOverbought5d",
+];
+
 type Props = {
-  searchParams: Promise<{ market?: string; date?: string; adapter?: string; period?: string }>;
+  searchParams: Promise<{ market?: string; date?: string; adapter?: string; period?: string; conds?: string; volMul?: string }>;
 };
 
 export default async function ScreenerPage({ searchParams }: Props) {
@@ -40,11 +45,29 @@ export default async function ScreenerPage({ searchParams }: Props) {
       ? rawAdapter
       : ((process.env["MARKET_DATA_ADAPTER"] ?? "mock") as AdapterType);
 
-  const period = Number(params.period) === 20 ? 20 : 5;
+  const PERIOD_OPTIONS = [1, 2, 3, 4, 5, 20];
+  const rawPeriod = Number(params.period);
+  const period = PERIOD_OPTIONS.includes(rawPeriod) ? rawPeriod : 5;
+
+  const VOL_MUL_OPTIONS = [0.5,1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+  const rawVolMul = Number(params.volMul);
+  const volMultiplier = VOL_MUL_OPTIONS.includes(rawVolMul) ? rawVolMul : 2;
+
+  // conds 파라미터 파싱: 없으면 기본값 ["breakout"]
+  const rawConds = params.conds;
+  const activeConditions: Array<keyof ScreenerConditions> = rawConds
+    ? (rawConds.split(",").filter((c) =>
+        ALL_CONDITION_KEYS.includes(c as keyof ScreenerConditions),
+      ) as Array<keyof ScreenerConditions>)
+    : ["breakout"];
+  // breakout은 항상 포함
+  if (!activeConditions.includes("breakout")) {
+    activeConditions.unshift("breakout");
+  }
 
   const adapter = createAdapter(adapterType);
   const stocks = await fetchAllStocks(adapter, market, 65, date);
-  const results = evaluateAllStocks(stocks, period);
+  const results = evaluateAllStocks(stocks, period, activeConditions, volMultiplier);
 
   // 차트 모달용 — 과거 조회 시 기준일 이후 5봉(미래)까지 포함
   const today = toLocalDateStr(new Date());
@@ -99,7 +122,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
         </div>
 
         {/* 조회 컨트롤 */}
-        <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} />
+        <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} currentVolMul={String(volMultiplier)} />
 
         {/* 요약 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -136,6 +159,8 @@ export default async function ScreenerPage({ searchParams }: Props) {
           totalScanned={stocks.length}
           histories={histories}
           period={period}
+          activeConditions={activeConditions}
+          volMultiplier={volMultiplier}
         />
       </div>
     </div>

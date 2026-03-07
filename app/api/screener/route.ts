@@ -9,7 +9,8 @@ const querySchema = z.object({
   market: z.enum(["KOSPI", "KOSDAQ", "ALL"]).default("ALL"),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   adapter: z.enum(["yahoo", "kiwoom", "mock"]).optional(),
-  period: z.coerce.number().refine((v) => v === 5 || v === 20).default(5),
+  period: z.coerce.number().refine((v) => [1, 2, 3, 4, 5, 20].includes(v)).default(5),
+  volMul: z.coerce.number().refine((v) => [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].includes(v)).default(2),
 });
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     date: searchParams.get("date") ?? undefined,
     adapter: searchParams.get("adapter") ?? undefined,
     period: searchParams.get("period") ?? undefined,
+    volMul: searchParams.get("volMul") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -28,13 +30,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { market, date, adapter: adapterParam, period } = parsed.data;
+  const { market, date, adapter: adapterParam, period, volMul } = parsed.data;
   const targetDate = date ?? toLocalDateStr(new Date());
 
   try {
     const adapter = createAdapter(adapterParam);
     const stocks = await fetchAllStocks(adapter, market, 65);
-    const passed = runScreener(stocks, period);
+    const passed = runScreener(stocks, period, volMul);
 
     const response: ScreenerApiResponse = {
       date: targetDate,
