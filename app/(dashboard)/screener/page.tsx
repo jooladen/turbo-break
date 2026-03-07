@@ -63,10 +63,13 @@ export default async function ScreenerPage({ searchParams }: Props) {
     ? (rawConds.split(",").filter((c) =>
         ALL_CONDITION_KEYS.includes(c as keyof ScreenerConditions),
       ) as Array<keyof ScreenerConditions>)
-    : ["breakout"];
-  // breakout은 항상 포함
+    : ["breakout", "sideways"];
+  // breakout, sideways는 항상 포함 (잠금 조건)
   if (!activeConditions.includes("breakout")) {
     activeConditions.unshift("breakout");
+  }
+  if (!activeConditions.includes("sideways")) {
+    activeConditions.push("sideways");
   }
 
   const adapter = createAdapter(adapterType);
