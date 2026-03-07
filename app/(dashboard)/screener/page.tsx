@@ -6,7 +6,7 @@ import ScreenerControls from "./ScreenerControls";
 import ScreenerTable from "./ScreenerTable";
 
 export const metadata = {
-  title: "20일 고가 돌파 스크리너 | turbo-break",
+  title: "고가 돌파 스크리너 | turbo-break",
 };
 
 // Yahoo Finance 실데이터 사용 시 매 요청마다 fresh fetch
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 type AdapterType = "yahoo" | "kiwoom" | "mock";
 
 type Props = {
-  searchParams: Promise<{ market?: string; date?: string; adapter?: string }>;
+  searchParams: Promise<{ market?: string; date?: string; adapter?: string; period?: string }>;
 };
 
 export default async function ScreenerPage({ searchParams }: Props) {
@@ -39,9 +39,11 @@ export default async function ScreenerPage({ searchParams }: Props) {
       ? rawAdapter
       : ((process.env["MARKET_DATA_ADAPTER"] ?? "mock") as AdapterType);
 
+  const period = Number(params.period) === 20 ? 20 : 5;
+
   const adapter = createAdapter(adapterType);
   const stocks = await fetchAllStocks(adapter, market, 65, date);
-  const results = evaluateAllStocks(stocks);
+  const results = evaluateAllStocks(stocks, period);
 
   // 차트 모달용 — ticker별 히스토리 전달 (서버에서 이미 조회된 데이터 재활용)
   const histories = Object.fromEntries(stocks.map((s) => [s.ticker, s.history]));
@@ -51,7 +53,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* localStorage 설정 복원 — React 마운트 전 실행으로 깜빡임 방지 */}
-      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.period)q.set('period',v.period);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {/* 페이지 헤더 */}
         <div className="mb-6">
@@ -69,7 +71,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
             <ThemeToggle />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            20일 고가 돌파 스크리너
+            {period}일 고가 돌파 스크리너
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             박스권 횡보 후 수급을 동반한 안전한 돌파 종목 필터링
@@ -77,7 +79,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
         </div>
 
         {/* 조회 컨트롤 */}
-        <ScreenerControls market={market} date={date} adapterType={adapterType} />
+        <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} />
 
         {/* 요약 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -113,6 +115,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
           date={date}
           totalScanned={stocks.length}
           histories={histories}
+          period={period}
         />
       </div>
     </div>

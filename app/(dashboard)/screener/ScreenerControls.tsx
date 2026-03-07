@@ -8,6 +8,7 @@ type Props = {
   market: string;
   date: string;
   adapterType: AdapterType;
+  currentPeriod: string;
 };
 
 const ADAPTER_OPTIONS: Array<{ value: AdapterType; label: string }> = [
@@ -23,7 +24,7 @@ type Prefs = {
   adapter: AdapterType;
 };
 
-export default function ScreenerControls({ market, date, adapterType }: Props) {
+export default function ScreenerControls({ market, date, adapterType, currentPeriod }: Props) {
   const [localMarket, setLocalMarket] = useState(market);
   const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -77,6 +78,19 @@ export default function ScreenerControls({ market, date, adapterType }: Props) {
           </button>
         ))}
       </div>
+
+      <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+
+      {/* 돌파 기간 */}
+      <select
+        name="period"
+        defaultValue={currentPeriod}
+        onChange={() => formRef.current?.requestSubmit()}
+        className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="5">5일 돌파</option>
+        <option value="20">20일 돌파</option>
+      </select>
 
       <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
 

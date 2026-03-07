@@ -1,21 +1,19 @@
 # Gap Detector Memory - turbo-break
 
-## Latest Analysis (2026-03-06 v6)
-- Feature: turbo-break (20일 고가 돌파 스크리너)
-- Match Rate: 99% (Design v2.1 vs Implementation)
-- Overall Score: 97% (Design 99% + Architecture 96% + Convention 96%)
-- Design Doc: v2.1 (user-provided spec)
-- Analysis Doc: docs/03-analysis/turbo-break.analysis.md
-- Status: Design v2.1과 구현 거의 완벽 일치 (112항목 중 111 PASS, 1 MINOR)
+## Latest Analysis (2026-03-07)
+- Feature: breakout-period-selector (돌파 기간 선택 5일/20일 콤보)
+- Match Rate: 100% (Design v1.0 vs Implementation, 52항목 전부 PASS)
+- Overall Score: 97% (Design 100% + Architecture 96% + Convention 96%)
+- Design Doc: docs/02-design/features/breakout-period-selector.design.md v1.0
+- Analysis Doc: docs/03-analysis/breakout-period-selector.analysis.md
+- Status: 6개 파일 변경, period 파라미터화 완벽 일치
 
-## Key Findings
-- Design v2.1의 모든 기능 스펙이 구현됨 (Missing = 0)
-- v2.1 신규 7항목 모두 PASS
-- Minor 차이 1건: KIWOOM_API_BASE_URL 기본값 (Design doc 문구 이슈)
-- NEW (v6): ORB 인트라데이 파일이 워킹 트리에서 부재 (git history에만 존재)
-- NEW (v6): ScreenerTable.tsx 1659줄 (+79 from v5)
-- NEW (v6): ORB 버튼이 /intraday로 링크하나 404 발생 (데드 링크)
-- 남은 기술부채: ScreenerTable.tsx 1659줄, .env.example 미존재, error.tsx/loading.tsx 미구현, ORB 데드 링크
+## Key Findings (breakout-period-selector)
+- 52개 검증 항목 모두 PASS (Missing = 0)
+- 상수 -> 함수 전환 패턴 (CONDITION_LABELS, CONDITION_META, EXPERT_DEFS, CONDITION_RAW_PATTERNS) 일관 적용
+- Added 3건: downloadCsv period 반영, getConditionInfo period 반영, periodDesc 변수 (자연스러운 확장)
+- ScreenerTable.tsx 1681줄 (+22 from v6)
+- 기존 기술부채 유지: ScreenerTable.tsx 크기, .env.example 미존재, error.tsx/loading.tsx 미구현
 
 ## Project Conventions
 - pnpm only, no enum, no any, no console.log
@@ -44,6 +42,11 @@
 | v4 | 2026-03-04 | v2.1 | 99% | v2.1 신규 항목 모두 구현 확인 |
 | v5 | 2026-03-05 | v2.1 | 99% | 종합 재점검 (Overall 97%), 아키텍처/컨벤션 상세 분석 |
 | v6 | 2026-03-06 | v2.1 | 99% | ORB 파일 부재 발견, ScreenerTable +79줄, 기술부채 5건 |
+
+### breakout-period-selector (돌파 기간 선택)
+| Version | Date | Design Ver | Match Rate | Notes |
+|---------|------|-----------|-----------|-------|
+| v1 | 2026-03-07 | v1.0 | 100% | 52항목 전부 PASS, 6파일 변경 |
 
 ### orb-intraday (인트라데이 스크리너)
 | Version | Date | Design Ver | Match Rate | Notes |

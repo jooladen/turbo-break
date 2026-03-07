@@ -61,6 +61,7 @@ export type ScreenerResult = {
   passCount: number; // 통과한 조건 수 (10 = 완전 통과)
   metrics: SignalMetrics;
   buySignal: BuySignal;
+  period: number;
 };
 
 export type ScreenerApiResponse = {

@@ -2,12 +2,12 @@
   "version": "1.0",
   "enabled": false,
   "teamName": "",
-  "feature": "turbo-break",
-  "pdcaPhase": "completed",
+  "feature": "breakout-period-selector",
+  "pdcaPhase": "design",
   "orchestrationPattern": "leader",
   "ctoAgent": "opus",
-  "startedAt": "2026-03-07T03:15:34.845Z",
-  "lastUpdated": "2026-03-07T03:18:27.877Z",
+  "startedAt": "2026-03-07T05:08:02.437Z",
+  "lastUpdated": "2026-03-07T05:14:49.762Z",
   "teammates": [],
   "progress": {
     "totalTasks": 0,
@@ -17,5 +17,5 @@
     "pendingTasks": 0
   },
   "recentMessages": [],
-  "sessionId": "fe82b2cb-795c-456a-9a73-a2c93df1f5c4"
+  "sessionId": "fb165842-3d19-4e1b-a99a-e577aa7374d9"
 }

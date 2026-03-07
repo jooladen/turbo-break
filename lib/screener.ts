@@ -16,15 +16,15 @@ const MA60_PERIOD = 60;
 const OVERHEAT_MAX_RATE = 8; // %
 const GAP_MAX_RATIO = 1.03;
 const OVERBOUGHT_5D_MAX = 0.15; // 15%
-const LOOKBACK_DAYS = 20;
+const DEFAULT_PERIOD = 5;
 
 /**
  * 20일 고가 돌파 (조건 1)
  * 오늘 종가 > history[1..20] 중 최고가
  */
-function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[]): boolean {
-  if (prior20.length < LOOKBACK_DAYS) return false;
-  const high20 = Math.max(...prior20.slice(0, LOOKBACK_DAYS).map((d) => d.high));
+function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[], period: number): boolean {
+  if (prior20.length < period) return false;
+  const high20 = Math.max(...prior20.slice(0, period).map((d) => d.high));
   return today.close > high20;
 }
 
@@ -32,9 +32,9 @@ function checkBreakout20(today: StockOHLCV, prior20: StockOHLCV[]): boolean {
  * 횡보 필터 (조건 2)
  * (20일 최고가 - 20일 최저가) / 20일 최저가 ≤ 15%
  */
-function checkSideways(prior20: StockOHLCV[]): boolean {
-  if (prior20.length < LOOKBACK_DAYS) return false;
-  const slice = prior20.slice(0, LOOKBACK_DAYS);
+function checkSideways(prior20: StockOHLCV[], period: number): boolean {
+  if (prior20.length < period) return false;
+  const slice = prior20.slice(0, period);
   const high20 = Math.max(...slice.map((d) => d.high));
   const low20 = Math.min(...slice.map((d) => d.low));
   if (low20 === 0) return false;
@@ -45,11 +45,11 @@ function checkSideways(prior20: StockOHLCV[]): boolean {
  * 거래량 폭증 (조건 3)
  * 당일 거래량 ≥ 20일 평균 거래량 × 2
  */
-function checkVolumeSurge(today: StockOHLCV, prior20: StockOHLCV[]): boolean {
-  if (prior20.length < LOOKBACK_DAYS) return false;
+function checkVolumeSurge(today: StockOHLCV, prior20: StockOHLCV[], period: number): boolean {
+  if (prior20.length < period) return false;
   const avgVolume =
-    prior20.slice(0, LOOKBACK_DAYS).reduce((sum, d) => sum + d.volume, 0) /
-    LOOKBACK_DAYS;
+    prior20.slice(0, period).reduce((sum, d) => sum + d.volume, 0) /
+    period;
   return today.volume >= avgVolume * VOLUME_SURGE_MULTIPLIER;
 }
 
@@ -138,8 +138,9 @@ function calcSignalMetrics(
   yesterday: StockOHLCV,
   prior20: StockOHLCV[],
   history: StockOHLCV[],
+  period: number,
 ): SignalMetrics {
-  const slice20 = prior20.slice(0, LOOKBACK_DAYS);
+  const slice20 = prior20.slice(0, period);
 
   const high20 = slice20.length > 0 ? Math.max(...slice20.map((d) => d.high)) : 0;
   const low20 = slice20.length > 0 ? Math.min(...slice20.map((d) => d.low)) : 0;
@@ -178,6 +179,7 @@ function calcSignalMetrics(
 function evaluateBuySignal(
   conditions: ScreenerConditions,
   m: SignalMetrics,
+  period: number,
 ): BuySignal {
   let raw = 0;
   const positives: string[] = [];
@@ -188,11 +190,11 @@ function evaluateBuySignal(
     const bonus = Math.min(10, (m.breakoutPct / 3) * 10);
     raw += 22 + bonus;
     positives.push(
-      `20일 고가를 ${m.breakoutPct.toFixed(1)}% 상향 돌파 — 저항선 전환 신호`,
+      `${period}일 고가를 ${m.breakoutPct.toFixed(1)}% 상향 돌파 — 저항선 전환 신호`,
     );
   } else {
     warnings.push(
-      `20일 돌파 미달 (현재 ${m.breakoutPct.toFixed(1)}% — 기준: 0% 초과) — 진입 시그널 없음`,
+      `${period}일 돌파 미달 (현재 ${m.breakoutPct.toFixed(1)}% — 기준: 0% 초과) — 진입 시그널 없음`,
     );
   }
 
@@ -201,7 +203,7 @@ function evaluateBuySignal(
     const bonus = Math.max(0, 8 - (m.sidewaysRange / 15) * 8);
     raw += 20 + bonus;
     positives.push(
-      `20일 박스권 범위 ${m.sidewaysRange.toFixed(1)}% — 충분한 에너지 응축`,
+      `${period}일 박스권 범위 ${m.sidewaysRange.toFixed(1)}% — 충분한 에너지 응축`,
     );
   } else {
     warnings.push(
@@ -309,7 +311,7 @@ function evaluateBuySignal(
 
   const summary =
     grade === "A"
-      ? `강력 매수 신호 — ${conditions.breakout20 ? "20일 돌파" : ""}${conditions.volumeSurge ? "+거래량 폭증" : ""} 복합 확인`
+      ? `강력 매수 신호 — ${conditions.breakout20 ? `${period}일 돌파` : ""}${conditions.volumeSurge ? "+거래량 폭증" : ""} 복합 확인`
       : grade === "B"
         ? "양호한 매수 신호 — 핵심 조건 대부분 충족"
         : grade === "C"
@@ -322,16 +324,16 @@ function evaluateBuySignal(
 /**
  * 단일 종목 평가
  */
-export function evaluateStock(stock: StockData): ScreenerResult {
+export function evaluateStock(stock: StockData, period = DEFAULT_PERIOD): ScreenerResult {
   const history = stock.history;
   const today = history[0];
   const yesterday = history[1];
   const prior20 = history.slice(1); // 오늘 제외한 이전 데이터
 
   const conditions: ScreenerConditions = {
-    breakout20: checkBreakout20(today, prior20),
-    sideways: checkSideways(prior20),
-    volumeSurge: checkVolumeSurge(today, prior20),
+    breakout20: checkBreakout20(today, prior20, period),
+    sideways: checkSideways(prior20, period),
+    volumeSurge: checkVolumeSurge(today, prior20, period),
     tailFilter: checkTailFilter(today),
     turnoverMin: checkTurnoverMin(today),
     aboveMA60: checkAboveMA60(today, history),
@@ -342,8 +344,8 @@ export function evaluateStock(stock: StockData): ScreenerResult {
   };
 
   const passCount = Object.values(conditions).filter(Boolean).length;
-  const metrics = calcSignalMetrics(today, yesterday, prior20, history);
-  const buySignal = evaluateBuySignal(conditions, metrics);
+  const metrics = calcSignalMetrics(today, yesterday, prior20, history, period);
+  const buySignal = evaluateBuySignal(conditions, metrics, period);
 
   return {
     ticker: stock.ticker,
@@ -357,15 +359,16 @@ export function evaluateStock(stock: StockData): ScreenerResult {
     passCount,
     metrics,
     buySignal,
+    period,
   };
 }
 
 /**
  * 스크리너 실행: 10가지 조건 모두 통과한 종목만 반환 (API 용)
  */
-export function runScreener(stocks: StockData[]): ScreenerResult[] {
+export function runScreener(stocks: StockData[], period = DEFAULT_PERIOD): ScreenerResult[] {
   return stocks
-    .map(evaluateStock)
+    .map((s) => evaluateStock(s, period))
     .filter((r) => r.passCount === 10)
     .sort((a, b) => b.changeRate - a.changeRate);
 }
@@ -373,8 +376,8 @@ export function runScreener(stocks: StockData[]): ScreenerResult[] {
 /**
  * 전체 종목 평가 반환: passCount 내림차순, 동점이면 등락률 내림차순 (UI 용)
  */
-export function evaluateAllStocks(stocks: StockData[]): ScreenerResult[] {
+export function evaluateAllStocks(stocks: StockData[], period = DEFAULT_PERIOD): ScreenerResult[] {
   return stocks
-    .map(evaluateStock)
+    .map((s) => evaluateStock(s, period))
     .sort((a, b) => b.passCount - a.passCount || b.changeRate - a.changeRate);
 }

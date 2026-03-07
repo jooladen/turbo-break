@@ -9,28 +9,30 @@ import StockChartInteractive from "@/components/stock-chart-interactive";
 type SortKey = "changeRate" | "turnover" | "volume" | "passCount" | "buyScore";
 type SortDir = "asc" | "desc";
 
-function generateKeyPoint(m: SignalMetrics, _grade: BuyGrade): string {
+function generateKeyPoint(m: SignalMetrics, _grade: BuyGrade, period: number): string {
   if (m.volumeMultiple >= 5) return `거래량 ${m.volumeMultiple.toFixed(1)}배 폭발 💥`;
   if (m.volumeMultiple >= 3) return `거래량 ${m.volumeMultiple.toFixed(1)}배로 큰손 유입 🔥`;
   if (m.sidewaysRange < 6) return `${m.sidewaysRange.toFixed(1)}% 초좁은 횡보 후 돌파 🎯`;
-  if (m.breakoutPct > 3) return `20일 고가를 ${m.breakoutPct.toFixed(1)}% 강하게 돌파 🚀`;
+  if (m.breakoutPct > 3) return `${period}일 고가를 ${m.breakoutPct.toFixed(1)}% 강하게 돌파 🚀`;
   if (m.sidewaysRange < 10) return `${m.sidewaysRange.toFixed(1)}% 횡보 끝에 에너지 폭발 ⚡`;
   if (m.ma60Distance < 3) return `60일선 바로 위 황금 자리 ✨`;
   return `${m.volumeMultiple.toFixed(1)}배 거래량으로 상승 확인 📈`;
 }
 
-const CONDITION_LABELS: Record<keyof ScreenerResult["conditions"], string> = {
-  breakout20: "20일 돌파",
-  sideways: "횡보",
-  volumeSurge: "거래량↑",
-  tailFilter: "윗꼬리",
-  turnoverMin: "거래대금",
-  aboveMA60: "MA60↑",
-  notOverheated: "과열X",
-  bullish: "양봉",
-  noGap: "갭X",
-  notOverbought5d: "5일급등X",
-};
+function getConditionLabels(period: number): Record<keyof ScreenerResult["conditions"], string> {
+  return {
+    breakout20: `${period}일 돌파`,
+    sideways: "횡보",
+    volumeSurge: "거래량↑",
+    tailFilter: "윗꼬리",
+    turnoverMin: "거래대금",
+    aboveMA60: "MA60↑",
+    notOverheated: "과열X",
+    bullish: "양봉",
+    noGap: "갭X",
+    notOverbought5d: "5일급등X",
+  };
+}
 
 // 중요도 순 정렬
 const CONDITION_KEYS: Array<keyof ScreenerResult["conditions"]> = [
@@ -53,27 +55,29 @@ type ConditionMeta = {
   detail: string;
 };
 
-const CONDITION_META: Record<keyof ScreenerResult["conditions"], ConditionMeta> = {
+function getConditionMeta(period: number): Record<keyof ScreenerResult["conditions"], ConditionMeta> {
+  const periodLabel = period === 5 ? "일주일" : "한 달";
+  return {
   breakout20: {
-    label: "20일 돌파",
+    label: `${period}일 돌파`,
     score: 10,
-    easy: "주가가 지난 20일 중 가장 높은 가격을 넘어섰어요! 마치 오랫동안 막혀있던 댐이 드디어 터지는 순간이에요 🚀",
+    easy: `주가가 지난 ${period}일 중 가장 높은 가격을 넘어섰어요! 마치 오랫동안 막혀있던 댐이 드디어 터지는 순간이에요 🚀`,
     detail:
-      "20일 저항선 돌파는 이 전략의 핵심 진입 시그널입니다. 박스권 상단 돌파 시 매집된 물량이 소화되며 강한 상승 에너지가 분출됩니다. 기관·외국인 매수세가 본격 유입되는 신호로, 추세 전환의 시작점입니다. 역사적으로 가장 높은 수익률을 기록한 진입 패턴 중 하나입니다.",
+      `${period}일 저항선 돌파는 이 전략의 핵심 진입 시그널입니다. 박스권 상단 돌파 시 매집된 물량이 소화되며 강한 상승 에너지가 분출됩니다. 기관·외국인 매수세가 본격 유입되는 신호로, 추세 전환의 시작점입니다. 역사적으로 가장 높은 수익률을 기록한 진입 패턴 중 하나입니다.`,
   },
   sideways: {
     label: "횡보",
     score: 9,
-    easy: "주가가 오랫동안 조용히 비슷한 가격 범위에서 움직였어요. 스프링이 꾹 눌려 있다가 튀어오르기 직전 같은 상태예요 🌀",
+    easy: `주가가 ${periodLabel} 동안 조용히 비슷한 가격 범위에서 움직였어요. 스프링이 꾹 눌려 있다가 튀어오르기 직전 같은 상태예요 🌀`,
     detail:
-      "돌파 전 충분한 에너지가 응축됐다는 증거입니다. 20일간 주가 변동폭이 ±15% 이내로 유지됐다는 것은 매도 물량이 소화되고 저점 매수자들이 물량을 쌓아왔다는 신호입니다. 횡보 기간이 길수록 돌파 후 상승 폭도 커지는 경향이 있습니다. 갑자기 급등한 종목보다 훨씬 안전한 진입 패턴입니다.",
+      `돌파 전 충분한 에너지가 응축됐다는 증거입니다. ${period}일간 주가 변동폭이 ±15% 이내로 유지됐다는 것은 매도 물량이 소화되고 저점 매수자들이 물량을 쌓아왔다는 신호입니다. 횡보 기간이 길수록 돌파 후 상승 폭도 커지는 경향이 있습니다. 갑자기 급등한 종목보다 훨씬 안전한 진입 패턴입니다.`,
   },
   volumeSurge: {
     label: "거래량↑",
     score: 9,
-    easy: "오늘 거래량이 평소보다 2배 이상 많아요! 많은 사람들이 동시에 '이 주식 사야겠다!'고 판단한 거예요 📊",
+    easy: `오늘 거래량이 평소보다 2배 이상 많아요! 많은 사람들이 동시에 '이 주식 사야겠다!'고 판단한 거예요 📊`,
     detail:
-      "거래량은 돌파의 신뢰성을 검증하는 핵심 필터입니다. 거래량이 20일 평균의 2배 이상이면 개인·기관·외국인 모두가 적극 매수에 참여했다는 증거입니다. 거래량 없는 돌파는 '가짜 돌파(False Breakout)'일 가능성이 높아 곧 되돌림이 발생합니다. 수급이 동반된 돌파만이 지속적인 상승으로 이어집니다.",
+      `거래량은 돌파의 신뢰성을 검증하는 핵심 필터입니다. 거래량이 ${period}일 평균의 2배 이상이면 개인·기관·외국인 모두가 적극 매수에 참여했다는 증거입니다. 거래량 없는 돌파는 '가짜 돌파(False Breakout)'일 가능성이 높아 곧 되돌림이 발생합니다. 수급이 동반된 돌파만이 지속적인 상승으로 이어집니다.`,
   },
   aboveMA60: {
     label: "MA60↑",
@@ -124,7 +128,8 @@ const CONDITION_META: Record<keyof ScreenerResult["conditions"], ConditionMeta> 
     detail:
       "종가가 당일 고가의 99% 이상이면 장 마감까지 매도 압력이 없었다는 뜻입니다. 윗꼬리가 긴 종목은 고점에서 차익실현 매물이 쏟아진 것으로 다음 날 하락 전환 가능성을 시사합니다. 특히 거래량이 많은 날의 긴 윗꼬리는 강한 매도 신호로 해석됩니다. 고점에서의 매도 압력 부재를 확인합니다.",
   },
-};
+  };
+}
 
 const PASS_FILTERS = [
   { label: "전체", min: 0 },
@@ -148,10 +153,11 @@ function formatVolume(volume: number): string {
   return volume.toLocaleString();
 }
 
-function downloadCsv(results: ScreenerResult[], date: string) {
+function downloadCsv(results: ScreenerResult[], date: string, period: number) {
+  const labels = getConditionLabels(period);
   const headers = [
     "종목코드", "종목명", "시장", "종가", "등락률", "거래량", "거래대금",
-    ...CONDITION_KEYS.map((k) => CONDITION_LABELS[k]),
+    ...CONDITION_KEYS.map((k) => labels[k]),
     "통과조건수",
   ];
   const rows = results.map((r) => [
@@ -200,8 +206,8 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function ConditionTooltip({ condKey }: { condKey: keyof ScreenerResult["conditions"] }) {
-  const meta = CONDITION_META[condKey];
+function ConditionTooltip({ condKey, period }: { condKey: keyof ScreenerResult["conditions"]; period: number }) {
+  const meta = getConditionMeta(period)[condKey];
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   return (
@@ -238,11 +244,13 @@ function ConditionTooltip({ condKey }: { condKey: keyof ScreenerResult["conditio
 function LegendItem({
   condKey,
   index,
+  period,
 }: {
   condKey: keyof ScreenerResult["conditions"];
   index: number;
+  period: number;
 }) {
-  const meta = CONDITION_META[condKey];
+  const meta = getConditionMeta(period)[condKey];
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
   return (
@@ -365,14 +373,15 @@ const GRADE_CONFIG: Record<
 };
 
 // ── 초딩용 긍정 설명 ──
-function toKidText(raw: string): { icon: string; title: string; story: string } {
+function toKidText(raw: string, period: number): { icon: string; title: string; story: string } {
+  const periodLabel = period === 5 ? "일주일" : "한 달";
   const map: Array<[RegExp, (m: RegExpMatchArray) => { icon: string; title: string; story: string }]> = [
     [
-      /20일 고가를 ([\d.]+)% 상향 돌파/,
+      new RegExp(`${period}일 고가를 ([\\d.]+)% 상향 돌파`),
       (m) => ({
         icon: "🚀",
-        title: `한 달 동안 못 넘던 가격 벽을 오늘 드디어 뚫었어요! (+${m[1]}%)`,
-        story: `비유하면 이래요: 우리 동네에 아주 유명한 떡볶이 가게가 있는데, 항상 줄이 너무 길어서 못 들어갔어요. 그런데 오늘 드디어 줄이 없어서 바로 들어갈 수 있게 된 거예요! 주식도 마찬가지예요. 20일 동안 "이 가격이면 팔겠다"는 사람들이 막고 있던 벽이 오늘 완전히 뚫렸어요. 이걸 전문용어로 "저항선 돌파"라고 해요. 이 앱에서 가장 중요한 신호예요 🏆`,
+        title: `${periodLabel} 동안 못 넘던 가격 벽을 오늘 드디어 뚫었어요! (+${m[1]}%)`,
+        story: `비유하면 이래요: 우리 동네에 아주 유명한 떡볶이 가게가 있는데, 항상 줄이 너무 길어서 못 들어갔어요. 그런데 오늘 드디어 줄이 없어서 바로 들어갈 수 있게 된 거예요! 주식도 마찬가지예요. ${period}일 동안 "이 가격이면 팔겠다"는 사람들이 막고 있던 벽이 오늘 완전히 뚫렸어요. 이걸 전문용어로 "저항선 돌파"라고 해요. 이 앱에서 가장 중요한 신호예요 🏆`,
       }),
     ],
     [
@@ -384,11 +393,11 @@ function toKidText(raw: string): { icon: string; title: string; story: string } 
       }),
     ],
     [
-      /20일 박스권 범위 ([\d.]+)%/,
+      new RegExp(`${period}일 박스권 범위 ([\\d.]+)%`),
       (m) => ({
         icon: "🌀",
-        title: `한 달 동안 가격이 ${m[1]}% 범위 안에서 아주 조용히 움직였어요`,
-        story: `스프링을 손으로 꾹꾹 누르고 있다고 상상해봐요. 누를수록 나중에 더 세게 튀어오르죠? 이 주식이 딱 그 상태였어요. 한 달 동안 가격이 별로 안 움직이면서 에너지를 조용히 쌓고 있었던 거예요. 오늘 그 스프링이 풀린 거예요! 오래 조용했던 종목일수록 돌파 후 더 크게 오르는 경우가 많아요 💪`,
+        title: `${periodLabel} 동안 가격이 ${m[1]}% 범위 안에서 아주 조용히 움직였어요`,
+        story: `스프링을 손으로 꾹꾹 누르고 있다고 상상해봐요. 누를수록 나중에 더 세게 튀어오르죠? 이 주식이 딱 그 상태였어요. ${periodLabel} 동안 가격이 별로 안 움직이면서 에너지를 조용히 쌓고 있었던 거예요. 오늘 그 스프링이 풀린 거예요! 오래 조용했던 종목일수록 돌파 후 더 크게 오르는 경우가 많아요 💪`,
       }),
     ],
     [
@@ -457,15 +466,16 @@ function toKidText(raw: string): { icon: string; title: string; story: string } 
 }
 
 // ── 초딩용 경고 설명 ──
-function toKidWarning(raw: string): { icon: string; title: string; story: string; fix: string } {
+function toKidWarning(raw: string, period: number): { icon: string; title: string; story: string; fix: string } {
+  const periodLabel = period === 5 ? "일주일" : "한 달";
   const map: Array<[RegExp, (m: RegExpMatchArray) => { icon: string; title: string; story: string; fix: string }]> = [
     [
-      /20일 돌파 미달/,
+      new RegExp(`${period}일 돌파 미달`),
       () => ({
         icon: "🚧",
         title: "아직 가장 중요한 가격 벽을 못 넘었어요",
-        story: "20일 동안 가장 높은 가격이라는 '담장'이 있는데 아직 그걸 못 넘었어요. 담장 안에 맛있는 과일이 있는데 아직 못 들어간 상태예요. 담장을 넘는 날이 바로 매수 타이밍이에요! 이게 이 앱에서 가장 중요한 조건이에요.",
-        fix: "오늘 종가가 최근 20일 최고가를 넘는 날 다시 확인해보세요!",
+        story: `${periodLabel} 동안 가장 높은 가격이라는 '담장'이 있는데 아직 그걸 못 넘었어요. 담장 안에 맛있는 과일이 있는데 아직 못 들어간 상태예요. 담장을 넘는 날이 바로 매수 타이밍이에요! 이게 이 앱에서 가장 중요한 조건이에요.`,
+        fix: `오늘 종가가 최근 ${period}일 최고가를 넘는 날 다시 확인해보세요!`,
       }),
     ],
     [
@@ -481,7 +491,7 @@ function toKidWarning(raw: string): { icon: string; title: string; story: string
       /횡보 범위 초과.*?([\d.]+)%/,
       (m) => ({
         icon: "🎢",
-        title: `가격이 최근 한 달 동안 ${m[1]}%나 들쑥날쑥했어요`,
+        title: `가격이 최근 ${periodLabel} 동안 ${m[1]}%나 들쑥날쑥했어요`,
         story: `요즘 이 주식 가격이 롤러코스터처럼 오르락내리락 했어요. 좋은 돌파 신호가 나오려면 먼저 가격이 좁은 범위에서 조용히 안정됐다가 한 번에 터져야 해요. 에너지가 충분히 응축되지 않은 상태라 오늘 오른 것도 일시적일 수 있어요.`,
         fix: "가격이 15% 이내 좁은 범위에서 조용히 움직이다가 터지는 날을 기다려요!",
       }),
@@ -579,36 +589,38 @@ type ExpertDef = {
   proTip: string;
 };
 
-const EXPERT_DEFS: ExpertDef[] = [
+function getExpertDefs(period: number): ExpertDef[] {
+  const periodDesc = period === 5 ? "약 1주" : "약 1달";
+  return [
   {
     key: "breakout20",
-    name: "20일 고가 돌파",
+    name: `${period}일 고가 돌파`,
     category: "추세",
     catColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
-    target: "돌파율 > 0% (종가 > 최근 20일 최고가)",
+    target: `돌파율 > 0% (종가 > 최근 ${period}일 최고가)`,
     getCurrent: (r) =>
       r.metrics.breakoutPct >= 0
         ? `+${r.metrics.breakoutPct.toFixed(2)}% 돌파 ✅`
         : `${r.metrics.breakoutPct.toFixed(2)}% 미달 ❌`,
     getBarPct: (r) => Math.min(100, Math.max(0, 50 + r.metrics.breakoutPct * 10)),
-    what: "최근 20거래일(약 1달) 동안 형성된 가격 저항선을 오늘 종가가 돌파했는지 확인합니다. 종가 기준으로 판단하며, 장중 일시 돌파는 인정하지 않습니다.",
+    what: `최근 ${period}거래일(${periodDesc}) 동안 형성된 가격 저항선을 오늘 종가가 돌파했는지 확인합니다. 종가 기준으로 판단하며, 장중 일시 돌파는 인정하지 않습니다.`,
     why: "윌리엄 오닐의 CAN SLIM 전략에서 핵심 매수 시그널입니다. 가격이 저항선을 돌파할 때는 그동안 해당 가격에서 팔려던 매도세가 완전히 소화된 상태를 의미합니다. 이후 오버헤드 공급(overhead supply)이 없어져 상승이 가속됩니다.",
     good: "돌파율이 1~5%면 이상적. 너무 작으면(0%대) 힘이 약하고, 너무 크면(8%+) 갭 상승과 겹칠 수 있습니다.",
     bad: "음수면 아직 저항선 아래 — 미돌파 상태. 가짜 돌파(false breakout) 방지를 위해 다음 날도 저항선 위에서 마감하는지 확인 권장.",
-    proTip: "돌파 당일 거래량이 20일 평균의 2배 이상이어야 신뢰도 상승. 거래량 없는 돌파의 60% 이상은 되돌림 발생.",
+    proTip: `돌파 당일 거래량이 ${period}일 평균의 2배 이상이어야 신뢰도 상승. 거래량 없는 돌파의 60% 이상은 되돌림 발생.`,
   },
   {
     key: "sideways",
     name: "박스권 횡보 (VCP)",
     category: "추세",
     catColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300",
-    target: "20일 변동폭 ≤ 15% (고가-저가)/저가",
+    target: `${period}일 변동폭 ≤ 15% (고가-저가)/저가`,
     getCurrent: (r) =>
       `변동폭 ${r.metrics.sidewaysRange.toFixed(1)}% (기준: ≤ 15%) ${r.conditions.sideways ? "✅" : "❌"}`,
     getBarPct: (r) => Math.min(100, Math.max(0, 100 - (r.metrics.sidewaysRange / 15) * 100)),
-    what: "최근 20일 동안 최고가와 최저가의 차이가 저가 대비 15% 이내인지 확인합니다. 이를 VCP(Volatility Contraction Pattern) 또는 박스권 패턴이라 합니다.",
+    what: `최근 ${period}일 동안 최고가와 최저가의 차이가 저가 대비 15% 이내인지 확인합니다. 이를 VCP(Volatility Contraction Pattern) 또는 박스권 패턴이라 합니다.`,
     why: "마크 미너비니가 체계화한 VCP는 돌파 전 변동성이 수축되는 구간입니다. 이 기간 동안 약한 손(weak hands)의 물량이 소화되고, 강한 손(strong hands)이 매집합니다. 수축이 길수록 돌파 후 상승 에너지도 커집니다.",
-    good: "5~10% 범위가 이상적. 범위가 좁을수록 에너지가 더 응축된 상태. 60일 횡보 후 돌파가 20일 횡보보다 더 강력.",
+    good: `5~10% 범위가 이상적. 범위가 좁을수록 에너지가 더 응축된 상태.`,
     bad: "15% 초과 = 변동성 과다, 방향성 없음. 20% 이상이면 하락 추세 중 반등일 가능성 높음.",
     proTip: "횡보 기간 중 거래량이 점차 줄어드는 패턴(Volume Dry-up)이 함께 나타나면 더욱 강력한 신호입니다.",
   },
@@ -617,11 +629,11 @@ const EXPERT_DEFS: ExpertDef[] = [
     name: "거래량 폭증",
     category: "수급",
     catColor: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300",
-    target: "당일 거래량 ≥ 20일 평균 × 2배",
+    target: `당일 거래량 ≥ ${period}일 평균 × 2배`,
     getCurrent: (r) =>
-      `20일 평균 대비 ${r.metrics.volumeMultiple.toFixed(1)}배 ${r.conditions.volumeSurge ? "✅" : "❌"}`,
+      `${period}일 평균 대비 ${r.metrics.volumeMultiple.toFixed(1)}배 ${r.conditions.volumeSurge ? "✅" : "❌"}`,
     getBarPct: (r) => Math.min(100, (r.metrics.volumeMultiple / 5) * 100),
-    what: "당일 거래량이 20일 평균 거래량의 2배 이상인지 확인합니다. 거래량은 매수·매도 모두 포함한 총 체결량입니다.",
+    what: `당일 거래량이 ${period}일 평균 거래량의 2배 이상인지 확인합니다. 거래량은 매수·매도 모두 포함한 총 체결량입니다.`,
     why: "거래량은 주가의 연료입니다. 기관·외국인·세력의 대량 매수는 반드시 거래량 증가를 수반합니다. 이를 'Accumulation Day'라 하며, 스탠 와인스타인의 Stage Analysis에서도 Stage 2 상승 구간의 필수 요건입니다.",
     good: "2배는 최소 기준. 3배 이상이면 강한 매수 집중. 5배 이상이면 비정상적 수급 유입 — 대형 이벤트 또는 기관 매집 가능성.",
     bad: "2배 미만 돌파는 'False Breakout' 확률 60% 이상. 다음 1~3거래일 내 되돌림 확인 필요.",
@@ -734,13 +746,15 @@ const EXPERT_DEFS: ExpertDef[] = [
     bad: "15% 초과: 단기 과매수. RSI 70+ 구간과 유사. 평균 3~7거래일 내 조정 발생 가능성 높음.",
     proTip: "15% 이상 급등 후 3~5일 조정(가격 또는 시간 조정)을 거친 뒤 다시 상승 시도가 나타날 때가 더 안전한 매수 기회입니다. 이를 'Pullback Entry'라 합니다.",
   },
-];
+  ];
+}
 
-function ExpertPanel({ result }: { result: ScreenerResult }) {
+function ExpertPanel({ result, period }: { result: ScreenerResult; period: number }) {
   const passCount = result.passCount;
   const total = 10;
   // 메인 화면(CONDITION_KEYS)과 동일한 순서로 정렬
-  const sortedDefs = CONDITION_KEYS.map((key) => EXPERT_DEFS.find((d) => d.key === key)!);
+  const expertDefs = getExpertDefs(period);
+  const sortedDefs = CONDITION_KEYS.map((key) => expertDefs.find((d) => d.key === key)!);
 
   return (
     <div className="p-5 space-y-5">
@@ -881,29 +895,33 @@ function ExpertPanel({ result }: { result: ScreenerResult }) {
 }
 
 // raw 텍스트 → 조건 번호·이름 (CONDITION_KEYS 순서 기준)
-const CONDITION_RAW_PATTERNS: Record<keyof ScreenerResult["conditions"], RegExp> = {
-  breakout20: /20일 고가를|20일 돌파 미달/,
-  sideways: /박스권 범위|횡보 범위/,
-  volumeSurge: /거래량 평균 대비|거래량 부족/,
-  aboveMA60: /MA60/,
-  turnoverMin: /500억/,
-  notOverbought5d: /5일 누적/,
-  noGap: /갭 없이|갭 상승/,
-  notOverheated: /당일 등락률|당일.*급등/,
-  bullish: /양봉 마감|음봉 마감/,
-  tailFilter: /윗꼬리 없이|윗꼬리 존재/,
-};
+function getConditionRawPatterns(period: number): Record<keyof ScreenerResult["conditions"], RegExp> {
+  return {
+    breakout20: new RegExp(`${period}일 고가를|${period}일 돌파 미달`),
+    sideways: /박스권 범위|횡보 범위/,
+    volumeSurge: /거래량 평균 대비|거래량 부족/,
+    aboveMA60: /MA60/,
+    turnoverMin: /500억/,
+    notOverbought5d: /5일 누적/,
+    noGap: /갭 없이|갭 상승/,
+    notOverheated: /당일 등락률|당일.*급등/,
+    bullish: /양봉 마감|음봉 마감/,
+    tailFilter: /윗꼬리 없이|윗꼬리 존재/,
+  };
+}
 
-function getConditionInfo(raw: string): { idx: number; name: string } {
+function getConditionInfo(raw: string, period: number): { idx: number; name: string } {
+  const patterns = getConditionRawPatterns(period);
+  const labels = getConditionLabels(period);
   for (const [i, key] of CONDITION_KEYS.entries()) {
-    if (CONDITION_RAW_PATTERNS[key].test(raw)) {
-      return { idx: i + 1, name: CONDITION_LABELS[key] };
+    if (patterns[key].test(raw)) {
+      return { idx: i + 1, name: labels[key] };
     }
   }
   return { idx: 0, name: "" };
 }
 
-function BuySignalPanel({ signal }: { signal: BuySignal }) {
+function BuySignalPanel({ signal, period }: { signal: BuySignal; period: number }) {
   const cfg = GRADE_CONFIG[signal.grade];
   const totalConditions = signal.positives.length + signal.warnings.length;
 
@@ -975,8 +993,8 @@ function BuySignalPanel({ signal }: { signal: BuySignal }) {
           </div>
           <div className="space-y-3">
             {signal.positives.map((raw, i) => {
-              const { icon, title, story } = toKidText(raw);
-              const info = getConditionInfo(raw);
+              const { icon, title, story } = toKidText(raw, period);
+              const info = getConditionInfo(raw, period);
               return (
                 <div
                   key={i}
@@ -1024,8 +1042,8 @@ function BuySignalPanel({ signal }: { signal: BuySignal }) {
           </div>
           <div className="space-y-3">
             {signal.warnings.map((raw, i) => {
-              const { icon, title, story, fix } = toKidWarning(raw);
-              const info = getConditionInfo(raw);
+              const { icon, title, story, fix } = toKidWarning(raw, period);
+              const info = getConditionInfo(raw, period);
               return (
                 <div
                   key={i}
@@ -1079,7 +1097,7 @@ function BuySignalPanel({ signal }: { signal: BuySignal }) {
           </p>
           <div className="space-y-2">
             {signal.warnings.slice(0, 3).map((raw, i) => {
-              const { icon, fix } = toKidWarning(raw);
+              const { icon, fix } = toKidWarning(raw, period);
               return (
                 <div key={i} className="flex items-start gap-2.5 bg-white/70 dark:bg-gray-800/50 rounded-xl px-3 py-2.5">
                   <span className="text-lg flex-shrink-0">{icon}</span>
@@ -1180,6 +1198,7 @@ type Props = {
   date: string;
   totalScanned: number;
   histories: Record<string, StockOHLCV[]>;
+  period: number;
 };
 
 type ModalTab = "chart" | "beginner" | "expert";
@@ -1190,7 +1209,7 @@ type ChartState = {
   result: ScreenerResult;
 } | null;
 
-export default function ScreenerTable({ results, date, totalScanned, histories }: Props) {
+export default function ScreenerTable({ results, date, totalScanned, histories, period }: Props) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>("buyScore");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -1321,7 +1340,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
               <strong className="text-gray-900 dark:text-gray-100">{sorted.length}종목</strong>
             </span>
             <button
-              onClick={() => downloadCsv(sorted, date)}
+              onClick={() => downloadCsv(sorted, date, period)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             >
               <span>CSV</span>
@@ -1379,7 +1398,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                       {r.buySignal.summary}
                     </p>
                     <p className="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">
-                      {generateKeyPoint(r.metrics, r.buySignal.grade)}
+                      {generateKeyPoint(r.metrics, r.buySignal.grade, period)}
                     </p>
                     <span
                       className={`text-xs font-medium ${
@@ -1437,13 +1456,16 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                       매수신호
                       <SortIcon col="buyScore" sortKey={sortKey} sortDir={sortDir} />
                     </th>
-                    {CONDITION_KEYS.map((k) => (
-                      <th key={k} className={th}>
-                        <span className="hidden lg:inline">{CONDITION_LABELS[k]}</span>
-                        <span className="lg:hidden">{CONDITION_LABELS[k].slice(0, 2)}</span>
-                        <ConditionTooltip condKey={k} />
-                      </th>
-                    ))}
+                    {CONDITION_KEYS.map((k) => {
+                      const labels = getConditionLabels(period);
+                      return (
+                        <th key={k} className={th}>
+                          <span className="hidden lg:inline">{labels[k]}</span>
+                          <span className="lg:hidden">{labels[k].slice(0, 2)}</span>
+                          <ConditionTooltip condKey={k} period={period} />
+                        </th>
+                      );
+                    })}
                     <th className={thBtn} onClick={() => handleSort("passCount")}>
                       통과
                       <SortIcon col="passCount" sortKey={sortKey} sortDir={sortDir} />
@@ -1565,7 +1587,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
           </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             {CONDITION_KEYS.map((k, i) => (
-              <LegendItem key={k} condKey={k} index={i} />
+              <LegendItem key={k} condKey={k} index={i} period={period} />
             ))}
           </div>
         </div>
@@ -1631,7 +1653,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                 <>
                   <div className="p-4">
                     {histories[chart.ticker] && histories[chart.ticker].length > 0 ? (
-                      <StockChartInteractive data={histories[chart.ticker]} />
+                      <StockChartInteractive data={histories[chart.ticker]} period={period} />
                     ) : (
                       <div className="flex items-center justify-center h-40 text-gray-400 dark:text-gray-500">
                         차트 데이터가 없습니다
@@ -1644,10 +1666,10 @@ export default function ScreenerTable({ results, date, totalScanned, histories }
                 </>
               )}
               {activeTab === "beginner" && (
-                <BuySignalPanel signal={chart.result.buySignal} />
+                <BuySignalPanel signal={chart.result.buySignal} period={period} />
               )}
               {activeTab === "expert" && (
-                <ExpertPanel result={chart.result} />
+                <ExpertPanel result={chart.result} period={period} />
               )}
             </div>
           </div>

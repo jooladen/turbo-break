@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createChart,
   createSeriesMarkers,
@@ -13,6 +13,7 @@ import type { StockOHLCV } from "@/lib/screener-types";
 
 type Props = {
   data: StockOHLCV[];
+  period?: number;
 };
 
 function calcMA(data: StockOHLCV[], period: number) {
@@ -37,7 +38,7 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-export default function StockChartInteractive({ data }: Props) {
+export default function StockChartInteractive({ data, period = 20 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -86,9 +87,9 @@ export default function StockChartInteractive({ data }: Props) {
     const candles = [...data].reverse();
     const n = candles.length;
 
-    // ── 20일 구간 계산 ──────────────────────────────────────────
-    // breakout20 조건: 오늘(index n-1)의 고가 > 직전 20봉(n-21 ~ n-2)의 최고가
-    const rangeStart = Math.max(0, n - 21);
+    // ── N일 구간 계산 ──────────────────────────────────────────
+    // breakout 조건: 오늘(index n-1)의 고가 > 직전 N봉의 최고가
+    const rangeStart = Math.max(0, n - period - 1);
     const rangeEnd = Math.max(0, n - 2);
     const range20 = candles.slice(rangeStart, rangeEnd + 1);
     const high20 = Math.max(...range20.map((d) => d.high));
@@ -114,7 +115,7 @@ export default function StockChartInteractive({ data }: Props) {
       })),
     );
 
-    // ── 20일 최고가 수평선 ───────────────────────────────────────
+    // ── N일 최고가 수평선 ───────────────────────────────────────
     candleSeries.createPriceLine({
       price: high20,
       color: "#f97316",
@@ -124,7 +125,7 @@ export default function StockChartInteractive({ data }: Props) {
       title: "",
     });
 
-    // ── 20일 범위 마커 (시작 / 끝) + 돌파 마커 ────────────────────
+    // ── N일 범위 마커 (시작 / 끝) + 돌파 마커 ────────────────────
     const todayCandle = candles[n - 1];
     const isBreakout = todayCandle !== undefined && todayCandle.close > high20;
     createSeriesMarkers(candleSeries, [
@@ -133,7 +134,7 @@ export default function StockChartInteractive({ data }: Props) {
         position: "belowBar",
         color: "#f97316",
         shape: "arrowUp",
-        text: "◀ 20일",
+        text: `◀ ${period}일`,
         size: 1,
       },
       {
@@ -141,7 +142,7 @@ export default function StockChartInteractive({ data }: Props) {
         position: "belowBar",
         color: "#f97316",
         shape: "arrowUp",
-        text: "20일 ▶",
+        text: `${period}일 ▶`,
         size: 1,
       },
       ...(isBreakout && todayCandle
@@ -169,7 +170,7 @@ export default function StockChartInteractive({ data }: Props) {
     });
 
     const avg20vol =
-      candles.slice(-21, -1).reduce((s, d) => s + d.volume, 0) / 20;
+      candles.slice(-(period + 1), -1).reduce((s, d) => s + d.volume, 0) / period;
 
     volumeSeries.setData(
       candles.map((d, i) => {
@@ -302,12 +303,12 @@ export default function StockChartInteractive({ data }: Props) {
       ro.disconnect();
       chart.remove();
     };
-  }, [data]);
+  }, [data, period]);
 
-  // 20일 구간 정보 (render용 — data prop에서 계산)
+  // N일 구간 정보 (render용 — data prop에서 계산)
   const candles = data.length > 0 ? [...data].reverse() : [];
   const n = candles.length;
-  const rangeStart = Math.max(0, n - 21);
+  const rangeStart = Math.max(0, n - period - 1);
   const rangeEnd = Math.max(0, n - 2);
   const range20 = candles.slice(rangeStart, rangeEnd + 1);
   const high20 = range20.length > 0 ? Math.max(...range20.map((d) => d.high)) : 0;
@@ -316,7 +317,9 @@ export default function StockChartInteractive({ data }: Props) {
       ? Math.round(range20.reduce((s, d) => s + d.volume, 0) / range20.length)
       : 0;
   const todayClose = candles[n - 1]?.close ?? 0;
+  const todayVol = candles[n - 1]?.volume ?? 0;
   const isBreakout = high20 > 0 && todayClose > high20;
+  const [showDebug, setShowDebug] = useState(false);
 
   return (
     <div className="relative">
@@ -326,11 +329,11 @@ export default function StockChartInteractive({ data }: Props) {
         className="absolute top-2 left-2 z-10 pointer-events-none"
       />
 
-      {/* 20일 최고가 + MA 범례 (상단 중앙, 세로 정렬) */}
+      {/* N일 최고가 + MA 범례 (상단 중앙, 세로 정렬) */}
       {high20 > 0 && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center gap-1">
           <span className="text-xs font-semibold text-orange-500 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded border border-orange-300 dark:border-orange-700 whitespace-nowrap">
-            20일 고가 {fmt(high20)}
+            {period}일 고가 {fmt(high20)}
           </span>
           <div className="flex items-center gap-3 text-xs bg-white/70 dark:bg-gray-900/70 px-2 py-0.5 rounded">
             <span className="flex items-center gap-1">
@@ -348,7 +351,7 @@ export default function StockChartInteractive({ data }: Props) {
           </div>
           {isBreakout && (
             <span className="text-xs font-bold text-red-500 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded border border-red-300 dark:border-red-700 whitespace-nowrap">
-              ▲ 20일 고가 돌파
+              ▲ {period}일 고가 돌파
             </span>
           )}
         </div>
@@ -356,7 +359,7 @@ export default function StockChartInteractive({ data }: Props) {
 
       <div ref={containerRef} className="w-full" />
 
-      {/* 20일 구간 정보 바 */}
+      {/* N일 구간 정보 바 */}
       {range20.length > 0 && (
         <div className="mt-1 px-2 py-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
           <span className="flex items-center gap-1">
@@ -364,7 +367,7 @@ export default function StockChartInteractive({ data }: Props) {
               className="inline-block w-2 h-2 rounded-full"
               style={{ background: "#f97316" }}
             />
-            <span className="font-medium text-orange-500">20일 구간</span>
+            <span className="font-medium text-orange-500">{period}일 구간</span>
           </span>
           <span>
             {candles[rangeStart]?.date} ~ {candles[rangeEnd]?.date}
@@ -389,6 +392,118 @@ export default function StockChartInteractive({ data }: Props) {
               </>
             );
           })()}
+          <button
+            type="button"
+            onClick={() => setShowDebug((v) => !v)}
+            className="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            {showDebug ? "검증 닫기" : "검증 보기"}
+          </button>
+        </div>
+      )}
+
+      {/* 엑셀식 검증 테이블 */}
+      {showDebug && range20.length > 0 && (
+        <div className="mt-1 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                <th className="px-2 py-1 text-left font-semibold">#</th>
+                <th className="px-2 py-1 text-left font-semibold">날짜</th>
+                <th className="px-2 py-1 text-right font-semibold">고가</th>
+                <th className="px-2 py-1 text-right font-semibold">저가</th>
+                <th className="px-2 py-1 text-right font-semibold">종가</th>
+                <th className="px-2 py-1 text-right font-semibold">거래량</th>
+                <th className="px-2 py-1 text-center font-semibold">구간</th>
+              </tr>
+            </thead>
+            <tbody>
+              {range20.map((d, i) => (
+                <tr
+                  key={d.date}
+                  className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                >
+                  <td className="px-2 py-0.5 text-gray-400 font-mono">{i + 1}</td>
+                  <td className="px-2 py-0.5 text-gray-600 dark:text-gray-300">{d.date}</td>
+                  <td className={`px-2 py-0.5 text-right font-mono ${d.high === high20 ? "text-orange-500 font-bold" : "text-gray-600 dark:text-gray-400"}`}>
+                    {fmt(d.high)}
+                  </td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">
+                    {fmt(d.low)}
+                  </td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">
+                    {fmt(d.close)}
+                  </td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">
+                    {fmt(d.volume)}
+                  </td>
+                  <td className="px-2 py-0.5 text-center text-orange-400">
+                    {period}일
+                  </td>
+                </tr>
+              ))}
+              {/* 오늘 (구간 밖) */}
+              {candles[n - 1] && (
+                <tr className="border-t-2 border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10">
+                  <td className="px-2 py-0.5 text-orange-500 font-bold font-mono">T</td>
+                  <td className="px-2 py-0.5 text-orange-600 dark:text-orange-400 font-semibold">{candles[n - 1]!.date}</td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(candles[n - 1]!.high)}</td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(candles[n - 1]!.low)}</td>
+                  <td className={`px-2 py-0.5 text-right font-mono font-bold ${isBreakout ? "text-red-500" : "text-blue-500"}`}>
+                    {fmt(candles[n - 1]!.close)}
+                  </td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(todayVol)}</td>
+                  <td className="px-2 py-0.5 text-center text-orange-500 font-bold">오늘</td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-50 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700">
+                <td colSpan={2} className="px-2 py-1.5 font-bold text-gray-700 dark:text-gray-200">
+                  합계 / 평균 ({range20.length}일)
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono font-bold text-orange-500">
+                  MAX {fmt(high20)}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-500">
+                  MIN {fmt(range20.length > 0 ? Math.min(...range20.map(d => d.low)) : 0)}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gray-500">—</td>
+                <td className="px-2 py-1.5 text-right font-mono font-bold text-gray-700 dark:text-gray-200">
+                  {fmt(Math.round(range20.reduce((s, d) => s + d.volume, 0) / range20.length))}
+                </td>
+                <td className="px-2 py-1.5 text-center text-gray-400">AVG</td>
+              </tr>
+              <tr className="bg-blue-50/50 dark:bg-blue-900/10 border-t border-gray-200 dark:border-gray-700">
+                <td colSpan={5} className="px-2 py-1.5 text-right text-gray-500 dark:text-gray-400">
+                  오늘 거래량 / {period}일 평균 =
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono font-bold text-orange-500">
+                  {avgVol20 > 0 ? (todayVol / avgVol20).toFixed(2) : "—"}배
+                </td>
+                <td className="px-2 py-1.5 text-center">
+                  {avgVol20 > 0 && todayVol / avgVol20 >= 2
+                    ? <span className="text-orange-500 font-bold">PASS</span>
+                    : <span className="text-gray-400">FAIL</span>
+                  }
+                </td>
+              </tr>
+              <tr className="bg-blue-50/50 dark:bg-blue-900/10 border-t border-gray-100 dark:border-gray-800">
+                <td colSpan={5} className="px-2 py-1.5 text-right text-gray-500 dark:text-gray-400">
+                  오늘 종가 vs {period}일 최고가 =
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono font-bold" style={{ color: isBreakout ? "#ef4444" : "#3b82f6" }}>
+                  {high20 > 0 ? (((todayClose - high20) / high20) * 100).toFixed(2) : "—"}%
+                </td>
+                <td className="px-2 py-1.5 text-center">
+                  {isBreakout
+                    ? <span className="text-red-500 font-bold">PASS</span>
+                    : <span className="text-gray-400">FAIL</span>
+                  }
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
     </div>
