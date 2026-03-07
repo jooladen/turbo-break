@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdapter, fetchAllStocks } from "@/lib/market-data";
+import { toLocalDateStr } from "@/lib/date-utils";
 import { runScreener } from "@/lib/screener";
 import type { ScreenerApiResponse } from "@/lib/screener-types";
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const { market, date, adapter: adapterParam } = parsed.data;
-  const targetDate = date ?? new Date().toISOString().slice(0, 10);
+  const targetDate = date ?? toLocalDateStr(new Date());
 
   try {
     const adapter = createAdapter(adapterParam);

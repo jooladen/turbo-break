@@ -13,7 +13,8 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Skill(bkit:plan-plus)",
-      "Skill(bkit:pdca)"
+      "Skill(bkit:pdca)",
+      "Skill(pdca)"
     ],
     "deny": [
       "Bash(rm -rf *)",

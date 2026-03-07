@@ -1,4 +1,5 @@
 import type { StockData, StockOHLCV } from "./screener-types";
+import { toLocalDateStr } from "./date-utils";
 import { yahooFinanceAdapter } from "./adapters/yahoo-finance-adapter";
 import { kiwoomAdapter } from "./adapters/kiwoom-adapter";
 
@@ -8,7 +9,7 @@ import { kiwoomAdapter } from "./adapters/kiwoom-adapter";
 
 export type MarketDataAdapter = {
   getStockList(market: "KOSPI" | "KOSDAQ"): Promise<string[]>;
-  getHistory(ticker: string, days: number): Promise<StockOHLCV[]>;
+  getHistory(ticker: string, days: number, endDate?: string): Promise<StockOHLCV[]>;
   getStockName(ticker: string): Promise<string>;
 };
 
@@ -37,19 +38,20 @@ function generateHistory(
   trend: number,
   volatility: number,
   baseTurnover: number,
+  referenceDate: Date,
 ): StockOHLCV[] {
   const rand = seededRandom(seed);
   const history: StockOHLCV[] = [];
 
   let price = basePrice;
 
-  const today = new Date();
+  const today = new Date(referenceDate);
   today.setHours(0, 0, 0, 0);
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().slice(0, 10);
+    const dateStr = toLocalDateStr(date);
 
     const dailyReturn = trend + (rand() - 0.5) * volatility * 2;
     const open = price * (1 + (rand() - 0.5) * 0.005);
@@ -84,6 +86,7 @@ function generateBreakoutStock(
   seed: number,
   basePrice: number,
   marketCap: number,
+  referenceDate: Date,
 ): StockOHLCV[] {
   const rand = seededRandom(seed);
   const history: StockOHLCV[] = [];
@@ -92,15 +95,15 @@ function generateBreakoutStock(
 
   let price = basePrice * 0.97;
 
-  const today = new Date();
+  const today = new Date(referenceDate);
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = toLocalDateStr(today);
 
   // 60일 전 ~ 1일 전: 박스권 횡보
   for (let i = 61; i >= 1; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().slice(0, 10);
+    const dateStr = toLocalDateStr(date);
 
     const dailyReturn = (rand() - 0.5) * sidewaysVolatility * 2;
     // 박스권 유지: 기준가의 ±7% 내
@@ -208,7 +211,7 @@ export class MockAdapter implements MarketDataAdapter {
     return all.find((s) => s.ticker === ticker)?.name ?? ticker;
   }
 
-  async getHistory(ticker: string, days: number): Promise<StockOHLCV[]> {
+  async getHistory(ticker: string, days: number, endDate?: string): Promise<StockOHLCV[]> {
     const kospiIdx = MOCK_KOSPI.findIndex((s) => s.ticker === ticker);
     const kosdaqIdx = MOCK_KOSDAQ.findIndex((s) => s.ticker === ticker);
     const idx = kospiIdx !== -1 ? kospiIdx : kosdaqIdx;
@@ -219,15 +222,16 @@ export class MockAdapter implements MarketDataAdapter {
     const seed = parseInt(ticker) % 9999 || idx + 1;
     const basePrice = 10000 + (seed * 37) % 290000;
     const baseTurnover = 60_000_000_000 + (seed * 13) % 940_000_000_000; // 600억~1조
+    const refDate = endDate ? new Date(endDate + "T00:00:00") : new Date();
 
     if (isBreakout) {
-      return generateBreakoutStock(seed, basePrice, baseTurnover);
+      return generateBreakoutStock(seed, basePrice, baseTurnover, refDate);
     }
 
     // 일반 종목: 다양한 패턴
     const trend = ((seed % 7) - 3) * 0.0002;
     const volatility = 0.01 + (seed % 5) * 0.003;
-    return generateHistory(seed, basePrice, days, trend, volatility, baseTurnover);
+    return generateHistory(seed, basePrice, days, trend, volatility, baseTurnover, refDate);
   }
 }
 
@@ -255,6 +259,7 @@ export async function fetchAllStocks(
   adapter: MarketDataAdapter,
   market: "KOSPI" | "KOSDAQ" | "ALL",
   days = 65,
+  endDate?: string,
 ): Promise<StockData[]> {
   const markets: Array<"KOSPI" | "KOSDAQ"> =
     market === "ALL" ? ["KOSPI", "KOSDAQ"] : [market];
@@ -266,7 +271,7 @@ export async function fetchAllStocks(
     const settled = await Promise.allSettled(
       tickers.map(async (ticker) => {
         const [history, name] = await Promise.all([
-          adapter.getHistory(ticker, days),
+          adapter.getHistory(ticker, days, endDate),
           adapter.getStockName(ticker),
         ]);
         return { ticker, name, market: m, history } satisfies StockData;

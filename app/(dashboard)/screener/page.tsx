@@ -1,4 +1,5 @@
 import { createAdapter, fetchAllStocks } from "@/lib/market-data";
+import { toLocalDateStr } from "@/lib/date-utils";
 import { evaluateAllStocks } from "@/lib/screener";
 import ThemeToggle from "@/components/theme-toggle";
 import ScreenerControls from "./ScreenerControls";
@@ -30,7 +31,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
   const date =
     dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
       ? dateParam
-      : new Date().toISOString().slice(0, 10);
+      : toLocalDateStr(new Date());
 
   const rawAdapter = params.adapter;
   const adapterType: AdapterType =
@@ -39,7 +40,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
       : ((process.env["MARKET_DATA_ADAPTER"] ?? "mock") as AdapterType);
 
   const adapter = createAdapter(adapterType);
-  const stocks = await fetchAllStocks(adapter, market, 65);
+  const stocks = await fetchAllStocks(adapter, market, 65, date);
   const results = evaluateAllStocks(stocks);
 
   // 차트 모달용 — ticker별 히스토리 전달 (서버에서 이미 조회된 데이터 재활용)

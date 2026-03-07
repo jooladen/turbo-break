@@ -88,10 +88,10 @@ export const kiwoomAdapter: MarketDataAdapter = {
       .filter((t): t is string => t !== null);
   },
 
-  async getHistory(ticker, days) {
+  async getHistory(ticker, days, endDate?) {
     const { apiKey, baseUrl } = getKiwoomConfig();
     const res = await fetch(
-      `${baseUrl}/stock/history?ticker=${ticker}&days=${days}`,
+      `${baseUrl}/stock/history?ticker=${ticker}&days=${days}${endDate ? `&endDate=${endDate}` : ""}`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
       },

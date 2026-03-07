@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-03-05T10:34:13.160Z",
+  "lastUpdated": "2026-03-07T04:20:11.133Z",
   "activeFeatures": [
     "turbo-break",
     "[...bknd]",
@@ -11,13 +11,14 @@
     "turbo-break Gap 분석",
     "adapters",
     "turbo-break Gap Analysis",
-    "intraday"
+    "intraday",
+    "adapter-date-fix"
   ],
-  "primaryFeature": "turbo-break",
+  "primaryFeature": "adapter-date-fix",
   "features": {
     "turbo-break": {
-      "phase": "completed",
-      "phaseNumber": 6,
+      "phase": "do",
+      "phaseNumber": 3,
       "matchRate": 97,
       "iterationCount": 0,
       "requirements": [],
@@ -29,9 +30,9 @@
       },
       "timestamps": {
         "started": "2026-03-02T14:40:06.994Z",
-        "lastUpdated": "2026-03-04T14:26:43.928Z"
+        "lastUpdated": "2026-03-07T04:19:08.341Z"
       },
-      "lastFile": "C:/Users/jooladen/Desktop/cluade-code2/turbo-break/lib/intraday-calc.ts"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\market-data.ts"
     },
     "[...bknd]": {
       "phase": "do",
@@ -94,9 +95,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T15:15:18.429Z",
-        "lastUpdated": "2026-03-05T10:34:13.160Z"
+        "lastUpdated": "2026-03-07T04:20:11.132Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\screener\\page.tsx"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\api\\screener\\route.ts"
     },
     "turbo-break Gap 분석": {
       "phase": "act",
@@ -121,9 +122,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-03-02T16:15:21.468Z",
-        "lastUpdated": "2026-03-04T15:51:06.046Z"
+        "lastUpdated": "2026-03-07T04:19:13.196Z"
       },
-      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\adapters\\intraday-mock-adapter.ts"
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\adapters\\yahoo-finance-adapter.ts"
     },
     "turbo-break Gap Analysis": {
       "phase": "act",
@@ -151,6 +152,24 @@
         "lastUpdated": "2026-03-04T15:56:17.966Z"
       },
       "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\app\\(dashboard)\\intraday\\IntradayView.tsx"
+    },
+    "adapter-date-fix": {
+      "phase": "completed",
+      "phaseNumber": 6,
+      "matchRate": 100,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {
+        "plan": "docs/01-plan/features/adapter-date-fix.plan.md",
+        "design": "docs/02-design/features/adapter-date-fix.design.md",
+        "analysis": "docs/03-analysis/adapter-date-fix.analysis.md",
+        "report": "docs/04-report/features/adapter-date-fix.report.md"
+      },
+      "timestamps": {
+        "started": "2026-03-07T00:00:00.000Z",
+        "lastUpdated": "2026-03-07T05:00:00.000Z"
+      },
+      "lastFile": "C:\\Users\\jooladen\\Desktop\\cluade-code2\\turbo-break\\lib\\date-utils.ts"
     }
   },
   "pipeline": {
@@ -161,7 +180,7 @@
   "session": {
     "startedAt": "2026-03-02T14:13:57.193Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-03-05T10:34:13.160Z"
+    "lastActivity": "2026-03-07T04:20:11.133Z"
   },
   "history": [
     {
@@ -1336,6 +1355,126 @@
     },
     {
       "timestamp": "2026-03-05T10:34:13.160Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:12.610Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:20.192Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:28.303Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:43.309Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:49.377Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:25:54.420Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:26:02.582Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:26:08.934Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T03:26:15.318Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:18:57.862Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:00.472Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:02.998Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:05.784Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:08.341Z",
+      "feature": "turbo-break",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:10.945Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:13.196Z",
+      "feature": "adapters",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:15.531Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:19:17.970Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:20:08.651Z",
+      "feature": "screener",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-03-07T04:20:11.132Z",
       "feature": "screener",
       "phase": "do",
       "action": "updated"
