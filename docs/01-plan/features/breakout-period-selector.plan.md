@@ -71,6 +71,9 @@
 | FR-06 | page.tsx 파이프라인 | period 파라미터 읽기 -> evaluateAllStocks 전달 | P0 |
 | FR-07 | BuySignal 메시지 동적화 | screener.ts의 positives/warnings 텍스트 "N일 돌파" | P0 |
 | FR-08 | 타입 변경 | `ScreenerResult`에 `period` 필드 추가 | P1 |
+| FR-09 | 차트 period 연동 | 캔들차트의 N일 고가 마커/범례/구간을 period에 맞게 동적화 | P1 |
+| FR-10 | 엑셀식 검증 테이블 | "검증 보기" 토글로 거래량 평균 계산 과정을 테이블로 표시 (합계/평균/PASS/FAIL) | P1 |
+| FR-11 | 미래 봉 프리뷰 | 과거 날짜 조회 시 기준일 이후 5봉을 반투명 캔들로 표시 + 수익률 배지 | P1 |
 
 ### 2.2 비기능 요구사항
 
@@ -94,6 +97,7 @@
 | 4 | `app/(dashboard)/screener/page.tsx` | `?period=` 읽기 + evaluateAllStocks 전달 |
 | 5 | `app/(dashboard)/screener/ScreenerTable.tsx` | 아래 상세 참조 (테이블 + 모달 모두) |
 | 6 | `app/api/screener/route.ts` | `?period=` 파라미터 처리 |
+| 7 | `components/stock-chart-interactive.tsx` | period/queryDate props 추가, N일 마커/범례 동적화, 검증 테이블, 미래 봉 프리뷰 |
 
 ### 3.2 ScreenerTable.tsx 상세 변경 범위 (테이블 + 모달 팝업)
 

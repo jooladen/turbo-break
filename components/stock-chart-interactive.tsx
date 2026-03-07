@@ -14,6 +14,7 @@ import type { StockOHLCV } from "@/lib/screener-types";
 type Props = {
   data: StockOHLCV[];
   period?: number;
+  queryDate?: string; // 기준일 — 이후 봉은 반투명 "미래" 처리
 };
 
 function calcMA(data: StockOHLCV[], period: number) {
@@ -38,7 +39,7 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-export default function StockChartInteractive({ data, period = 20 }: Props) {
+export default function StockChartInteractive({ data, period = 20, queryDate }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -78,8 +79,14 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
       },
       timeScale: {
         borderColor: isDark ? "#374151" : "#e5e7eb",
-        timeVisible: true,
-        secondsVisible: false,
+        timeVisible: false,
+        tickMarkFormatter: (time: string) => {
+          const [y, m, d] = time.split("-");
+          return `${m}/${d}`;
+        },
+      },
+      localization: {
+        dateFormat: "yyyy-MM-dd",
       },
     });
 
@@ -87,10 +94,13 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
     const candles = [...data].reverse();
     const n = candles.length;
 
-    // ── N일 구간 계산 ──────────────────────────────────────────
-    // breakout 조건: 오늘(index n-1)의 고가 > 직전 N봉의 최고가
-    const rangeStart = Math.max(0, n - period - 1);
-    const rangeEnd = Math.max(0, n - 2);
+    // ── N일 구간 계산 (기준일 기반) ─────────────────────────────
+    const pivotIdx = queryDate
+      ? candles.findIndex((d) => d.date === queryDate)
+      : n - 1;
+    const effectiveEnd = pivotIdx >= 0 ? pivotIdx : n - 1;
+    const rangeStart = Math.max(0, effectiveEnd - period);
+    const rangeEnd = Math.max(0, effectiveEnd - 1);
     const range20 = candles.slice(rangeStart, rangeEnd + 1);
     const high20 = Math.max(...range20.map((d) => d.high));
 
@@ -106,13 +116,21 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
     });
 
     candleSeries.setData(
-      candles.map((d) => ({
-        time: d.date as `${number}-${number}-${number}`,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-      })),
+      candles.map((d) => {
+        const isFuture = queryDate !== undefined && d.date > queryDate;
+        return {
+          time: d.date as `${number}-${number}-${number}`,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+          ...(isFuture && {
+            color: d.close >= d.open ? "#ef444440" : "#3b82f640",
+            borderColor: d.close >= d.open ? "#ef444460" : "#3b82f660",
+            wickColor: d.close >= d.open ? "#ef444440" : "#3b82f640",
+          }),
+        };
+      }),
     );
 
     // ── N일 최고가 수평선 ───────────────────────────────────────
@@ -125,9 +143,11 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
       title: "",
     });
 
-    // ── N일 범위 마커 (시작 / 끝) + 돌파 마커 ────────────────────
-    const todayCandle = candles[n - 1];
-    const isBreakout = todayCandle !== undefined && todayCandle.close > high20;
+    // ── N일 범위 마커 (시작 / 끝) + 돌파 마커 + 기준일 마커 ────────
+    const pivotCandle = candles[effectiveEnd];
+    const isBreakout = pivotCandle !== undefined && pivotCandle.close > high20;
+    const hasFuture = queryDate !== undefined && effectiveEnd < n - 1;
+
     createSeriesMarkers(candleSeries, [
       {
         time: candles[rangeStart].date as `${number}-${number}-${number}`,
@@ -145,15 +165,27 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
         text: `${period}일 ▶`,
         size: 1,
       },
-      ...(isBreakout && todayCandle
+      ...(isBreakout && pivotCandle
         ? [
             {
-              time: todayCandle.date as `${number}-${number}-${number}`,
+              time: pivotCandle.date as `${number}-${number}-${number}`,
               position: "aboveBar" as const,
               color: "#ef4444",
               shape: "arrowDown" as const,
               text: "돌파 ▲",
               size: 2,
+            },
+          ]
+        : []),
+      ...(hasFuture && pivotCandle
+        ? [
+            {
+              time: pivotCandle.date as `${number}-${number}-${number}`,
+              position: "belowBar" as const,
+              color: "#10b981",
+              shape: "arrowUp" as const,
+              text: "기준일",
+              size: 1,
             },
           ]
         : []),
@@ -169,18 +201,25 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
       scaleMargins: { top: 0.8, bottom: 0 },
     });
 
-    const avg20vol =
-      candles.slice(-(period + 1), -1).reduce((s, d) => s + d.volume, 0) / period;
+    const avg20vol = range20.length > 0
+      ? range20.reduce((s, d) => s + d.volume, 0) / range20.length
+      : 0;
+
+    // queryDate가 있으면 그 날이 "기준일", 없으면 마지막 봉이 기준일
+    const pivotDate = queryDate ?? candles[candles.length - 1]?.date;
 
     volumeSeries.setData(
-      candles.map((d, i) => {
+      candles.map((d) => {
+        const isFuture = queryDate !== undefined && d.date > queryDate;
+        const isPivot = d.date === pivotDate;
         const isSurge = avg20vol > 0 && d.volume >= avg20vol * 2;
-        const isToday = i === candles.length - 1;
         let color: string;
-        if (isToday && isSurge) {
-          color = "#f97316"; // 오늘 + surge: solid 주황
-        } else if (isToday) {
-          color = d.close >= d.open ? "#ef4444" : "#3b82f6"; // 오늘 일반: solid 색
+        if (isFuture) {
+          color = d.close >= d.open ? "#ef444418" : "#3b82f618"; // 미래: 매우 연한
+        } else if (isPivot && isSurge) {
+          color = "#f97316"; // 기준일 + surge: solid 주황
+        } else if (isPivot) {
+          color = d.close >= d.open ? "#ef4444" : "#3b82f6"; // 기준일 일반: solid 색
         } else if (isSurge) {
           color = "#f9731680"; // surge: 반투명 주황
         } else {
@@ -303,21 +342,28 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
       ro.disconnect();
       chart.remove();
     };
-  }, [data, period]);
+  }, [data, period, queryDate]);
 
   // N일 구간 정보 (render용 — data prop에서 계산)
   const candles = data.length > 0 ? [...data].reverse() : [];
   const n = candles.length;
-  const rangeStart = Math.max(0, n - period - 1);
-  const rangeEnd = Math.max(0, n - 2);
+  // 기준일 인덱스 (미래 봉 제외)
+  const pivotIdx = queryDate
+    ? candles.findIndex((d) => d.date === queryDate)
+    : n - 1;
+  const effectiveEnd = pivotIdx >= 0 ? pivotIdx : n - 1;
+  const futureBars = candles.slice(effectiveEnd + 1);
+  const rangeStart = Math.max(0, effectiveEnd - period);
+  const rangeEnd = Math.max(0, effectiveEnd - 1);
   const range20 = candles.slice(rangeStart, rangeEnd + 1);
   const high20 = range20.length > 0 ? Math.max(...range20.map((d) => d.high)) : 0;
   const avgVol20 =
     range20.length > 0
       ? Math.round(range20.reduce((s, d) => s + d.volume, 0) / range20.length)
       : 0;
-  const todayClose = candles[n - 1]?.close ?? 0;
-  const todayVol = candles[n - 1]?.volume ?? 0;
+  const pivotCandle = candles[effectiveEnd];
+  const todayClose = pivotCandle?.close ?? 0;
+  const todayVol = pivotCandle?.volume ?? 0;
   const isBreakout = high20 > 0 && todayClose > high20;
   const [showDebug, setShowDebug] = useState(false);
 
@@ -354,6 +400,15 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
               ▲ {period}일 고가 돌파
             </span>
           )}
+          {futureBars.length > 0 && (() => {
+            const lastFuture = futureBars[futureBars.length - 1]!;
+            const gain = todayClose > 0 ? ((lastFuture.close - todayClose) / todayClose * 100) : 0;
+            return (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded border whitespace-nowrap bg-white/80 dark:bg-gray-900/80 ${gain >= 0 ? "text-red-500 border-red-300 dark:border-red-700" : "text-blue-500 border-blue-300 dark:border-blue-700"}`}>
+                {futureBars.length}일 후 {gain >= 0 ? "+" : ""}{gain.toFixed(1)}%
+              </span>
+            );
+          })()}
         </div>
       )}
 
@@ -375,8 +430,7 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
           <span className="text-orange-500 font-semibold">최고가 {fmt(high20)}</span>
           <span className="text-gray-400 dark:text-gray-500">|</span>
           <span>평균거래량 <span className="font-semibold text-gray-700 dark:text-gray-300">{fmt(avgVol20)}</span></span>
-          {avgVol20 > 0 && candles[n - 1] && (() => {
-            const todayVol = candles[n - 1]!.volume;
+          {avgVol20 > 0 && pivotCandle && (() => {
             const multiple = todayVol / avgVol20;
             const isSurge = multiple >= 2;
             return (
@@ -442,15 +496,15 @@ export default function StockChartInteractive({ data, period = 20 }: Props) {
                   </td>
                 </tr>
               ))}
-              {/* 오늘 (구간 밖) */}
-              {candles[n - 1] && (
+              {/* 기준일 (구간 밖) — queryDate가 있으면 pivotCandle, 없으면 마지막 봉 */}
+              {pivotCandle && (
                 <tr className="border-t-2 border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10">
                   <td className="px-2 py-0.5 text-orange-500 font-bold font-mono">T</td>
-                  <td className="px-2 py-0.5 text-orange-600 dark:text-orange-400 font-semibold">{candles[n - 1]!.date}</td>
-                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(candles[n - 1]!.high)}</td>
-                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(candles[n - 1]!.low)}</td>
+                  <td className="px-2 py-0.5 text-orange-600 dark:text-orange-400 font-semibold">{pivotCandle.date}</td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(pivotCandle.high)}</td>
+                  <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(pivotCandle.low)}</td>
                   <td className={`px-2 py-0.5 text-right font-mono font-bold ${isBreakout ? "text-red-500" : "text-blue-500"}`}>
-                    {fmt(candles[n - 1]!.close)}
+                    {fmt(pivotCandle.close)}
                   </td>
                   <td className="px-2 py-0.5 text-right font-mono text-gray-600 dark:text-gray-400">{fmt(todayVol)}</td>
                   <td className="px-2 py-0.5 text-center text-orange-500 font-bold">오늘</td>

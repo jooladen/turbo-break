@@ -1653,7 +1653,7 @@ export default function ScreenerTable({ results, date, totalScanned, histories, 
                 <>
                   <div className="p-4">
                     {histories[chart.ticker] && histories[chart.ticker].length > 0 ? (
-                      <StockChartInteractive data={histories[chart.ticker]} period={period} />
+                      <StockChartInteractive data={histories[chart.ticker]} period={period} queryDate={date} />
                     ) : (
                       <div className="flex items-center justify-center h-40 text-gray-400 dark:text-gray-500">
                         차트 데이터가 없습니다

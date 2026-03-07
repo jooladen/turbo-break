@@ -129,6 +129,21 @@
 
 ---
 
+### 2.7 components/stock-chart-interactive.tsx
+
+| # | 검증 항목 | 구현 상태 | 결과 |
+|---|----------|----------|:----:|
+| 1 | `period` prop 수신 | props에 `period?: number` 존재 | PASS |
+| 2 | `queryDate` prop 수신 | props에 `queryDate?: string` 존재 | PASS |
+| 3 | N일 고가 구간 계산이 period 기반 | period 값으로 lookback 구간 슬라이스 | PASS |
+| 4 | N일 고가 수평선 범례 동적화 | `${period}일 고가` 형태로 범례 표시 | PASS |
+| 5 | 돌파 마커 텍스트 동적화 | `${period}일 돌파` 마커 표시 | PASS |
+| 6 | 미래 봉 프리뷰 (과거 조회 시) | queryDate 기준일 이후 5봉을 반투명 캔들로 표시 | PASS |
+| 7 | 미래 봉 수익률 배지 | 5봉 후 수익률을 배지로 표시 | PASS |
+| 8 | 검증 테이블 ("검증 보기" 토글) | 거래량 합계/평균/배수/PASS/FAIL 계산 과정 표시 | PASS |
+
+---
+
 ## 3. Missing Features (Design O, Implementation X)
 
 없음.
@@ -142,6 +157,9 @@
 | 1 | `downloadCsv`에 period 반영 | ScreenerTable.tsx L156 | CSV 다운로드 시 period 기반 라벨 사용 (Design 미기술) |
 | 2 | `getConditionInfo`에 period 반영 | ScreenerTable.tsx L913 | 조건 정보 조회 시 period 전달 (Design 미기술) |
 | 3 | `periodDesc` 변수 (ExpertDefs) | ScreenerTable.tsx L593 | `period === 5 ? "약 1주" : "약 1달"` 추가 설명 텍스트 |
+| 4 | 차트 period 연동 | stock-chart-interactive.tsx | period prop으로 N일 고가 마커/범례/구간 동적화 |
+| 5 | 엑셀식 검증 테이블 | stock-chart-interactive.tsx | "검증 보기" 토글로 거래량 평균 계산 과정 표시 (합계/평균/PASS/FAIL) |
+| 6 | 미래 봉 프리뷰 | stock-chart-interactive.tsx | 과거 조회 시 기준일 이후 5봉을 반투명 캔들로 표시 + 수익률 배지 |
 
 이들은 Design 범위를 넘지 않는 자연스러운 확장이며, period 파라미터화의 일관성을 위해 필요한 변경.
 
@@ -204,11 +222,11 @@
 
 ## 9. Summary
 
-**Match Rate: 100%** (52개 검증 항목 중 52개 PASS)
+**Match Rate: 100%** (60개 검증 항목 중 60개 PASS)
 
-Design v1.0 문서에 기술된 모든 요구사항이 구현에 정확히 반영되었다. 6개 파일에 걸친 period 파라미터화가 일관되게 적용되었으며, 상수 -> 함수 전환 패턴이 Design 명세와 정확히 일치한다.
+Design v1.0 문서에 기술된 모든 요구사항이 구현에 정확히 반영되었다. 7개 파일에 걸친 period 파라미터화가 일관되게 적용되었으며, 상수 -> 함수 전환 패턴이 Design 명세와 정확히 일치한다.
 
-추가 구현 3건(downloadCsv, getConditionInfo, periodDesc)은 Design 범위의 자연스러운 확장으로, period 일관성을 높이는 긍정적 추가사항이다.
+추가 구현 6건(downloadCsv, getConditionInfo, periodDesc, 차트 period 연동, 검증 테이블, 미래 봉 프리뷰)은 Design 범위의 자연스러운 확장으로, period 일관성과 사용자 검증 경험을 높이는 긍정적 추가사항이다.
 
 기존 기술부채(.env.example 미존재, error.tsx/loading.tsx 미구현, ScreenerTable.tsx 크기)는 이 기능과 무관한 사항으로 전체 점수에 영향을 주지 않는다.
 

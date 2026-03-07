@@ -1,4 +1,5 @@
 import { createAdapter, fetchAllStocks } from "@/lib/market-data";
+import type { StockOHLCV } from "@/lib/screener-types";
 import { toLocalDateStr } from "@/lib/date-utils";
 import { evaluateAllStocks } from "@/lib/screener";
 import ThemeToggle from "@/components/theme-toggle";
@@ -45,8 +46,27 @@ export default async function ScreenerPage({ searchParams }: Props) {
   const stocks = await fetchAllStocks(adapter, market, 65, date);
   const results = evaluateAllStocks(stocks, period);
 
-  // 차트 모달용 — ticker별 히스토리 전달 (서버에서 이미 조회된 데이터 재활용)
-  const histories = Object.fromEntries(stocks.map((s) => [s.ticker, s.history]));
+  // 차트 모달용 — 과거 조회 시 기준일 이후 5봉(미래)까지 포함
+  const today = toLocalDateStr(new Date());
+  const isPastDate = date < today;
+  let histories: Record<string, StockOHLCV[]>;
+
+  if (isPastDate) {
+    // 오늘까지 데이터를 별도 조회하여 기준일 이후 봉 추가
+    const futureStocks = await fetchAllStocks(adapter, market, 65, today);
+    const futureMap = Object.fromEntries(futureStocks.map((s) => [s.ticker, s.history]));
+    histories = Object.fromEntries(
+      stocks.map((s) => {
+        const futureHistory = futureMap[s.ticker];
+        if (!futureHistory) return [s.ticker, s.history];
+        // futureHistory는 최신→과거 순. 기준일 이후(date 초과) 봉만 추출
+        const futureBars = futureHistory.filter((d) => d.date > date).slice(-5);
+        return [s.ticker, [...futureBars, ...s.history]];
+      }),
+    );
+  } else {
+    histories = Object.fromEntries(stocks.map((s) => [s.ticker, s.history]));
+  }
 
   const passed10 = results.filter((r) => r.passCount === 10).length;
 
