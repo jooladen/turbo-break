@@ -36,6 +36,71 @@ function calcMA(data: StockOHLCV[], period: number) {
     );
 }
 
+function calcBollingerBands(data: StockOHLCV[], period = 20, multiplier = 2) {
+  return data
+    .map((_, i) => {
+      if (i < period - 1) return null;
+      const slice = data.slice(i - period + 1, i + 1);
+      const mean = slice.reduce((s, d) => s + d.close, 0) / period;
+      const variance =
+        slice.reduce((s, d) => s + (d.close - mean) ** 2, 0) / period;
+      const stdDev = Math.sqrt(variance);
+      return {
+        time: data[i].date as `${number}-${number}-${number}`,
+        upper: Math.round(mean + multiplier * stdDev),
+        lower: Math.round(mean - multiplier * stdDev),
+      };
+    })
+    .filter(
+      (
+        v,
+      ): v is {
+        time: `${number}-${number}-${number}`;
+        upper: number;
+        lower: number;
+      } => v !== null,
+    );
+}
+
+function calcRSI(data: StockOHLCV[], period: number) {
+  if (data.length < period + 1) return [];
+
+  const results: { time: `${number}-${number}-${number}`; value: number }[] = [];
+
+  // 첫 period 구간: 단순 평균으로 초기 avgGain/avgLoss 계산
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 1; i <= period; i++) {
+    const change = data[i].close - data[i - 1].close;
+    if (change > 0) avgGain += change;
+    else avgLoss += Math.abs(change);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  const rsi0 = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  results.push({
+    time: data[period].date as `${number}-${number}-${number}`,
+    value: Math.round(rsi0 * 100) / 100,
+  });
+
+  // Wilder's smoothing
+  for (let i = period + 1; i < data.length; i++) {
+    const change = data[i].close - data[i - 1].close;
+    const gain = change > 0 ? change : 0;
+    const loss = change < 0 ? Math.abs(change) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    const rsi = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+    results.push({
+      time: data[i].date as `${number}-${number}-${number}`,
+      value: Math.round(rsi * 100) / 100,
+    });
+  }
+
+  return results;
+}
+
 function fmt(n: number): string {
   return n.toLocaleString();
 }
@@ -55,6 +120,7 @@ function findPivotIdx(candles: StockOHLCV[], queryDate: string | undefined, fall
 
 export default function StockChartInteractive({ data, period = 20, queryDate, volMultiplier = 2 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rsiContainerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -278,7 +344,137 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
     });
     ma60Series.setData(calcMA(candles, 60));
 
+    // ── 볼린저 밴드 (20일, 2σ) ─────────────────────────────────
+    const bb = calcBollingerBands(candles);
+
+    const bbUpperSeries = chart.addSeries(LineSeries, {
+      color: "#ef444480",
+      lineWidth: 1,
+      priceScaleId: "right",
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    bbUpperSeries.setData(bb.map((b) => ({ time: b.time, value: b.upper })));
+
+    const bbLowerSeries = chart.addSeries(LineSeries, {
+      color: "#ef444480",
+      lineWidth: 1,
+      priceScaleId: "right",
+      crosshairMarkerVisible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    bbLowerSeries.setData(bb.map((b) => ({ time: b.time, value: b.lower })));
+
     chart.timeScale().fitContent();
+
+    // ── RSI 패널 (별도 차트) ──────────────────────────────────────
+    let rsiChart: ReturnType<typeof createChart> | null = null;
+    let rsiRo: ResizeObserver | null = null;
+
+    if (rsiContainerRef.current) {
+      rsiChart = createChart(rsiContainerRef.current, {
+        width: rsiContainerRef.current.clientWidth,
+        height: 120,
+        layout: {
+          background: {
+            type: ColorType.Solid,
+            color: isDark ? "#111827" : "#ffffff",
+          },
+          textColor: isDark ? "#9ca3af" : "#374151",
+        },
+        grid: {
+          vertLines: { color: isDark ? "#1f2937" : "#f3f4f6" },
+          horzLines: { color: isDark ? "#1f2937" : "#f3f4f6" },
+        },
+        rightPriceScale: {
+          borderColor: isDark ? "#374151" : "#e5e7eb",
+          scaleMargins: { top: 0.05, bottom: 0.05 },
+        },
+        timeScale: {
+          borderColor: isDark ? "#374151" : "#e5e7eb",
+          timeVisible: false,
+          visible: false,
+        },
+        crosshair: {
+          vertLine: {
+            color: isDark ? "#4b5563" : "#9ca3af",
+            width: 1,
+            style: 2,
+          },
+          horzLine: {
+            color: isDark ? "#4b5563" : "#9ca3af",
+            width: 1,
+            style: 2,
+          },
+        },
+      });
+
+      // RSI(14) 시리즈 — 보라
+      const rsi14Series = rsiChart.addSeries(LineSeries, {
+        color: "#8b5cf6",
+        lineWidth: 2,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+      rsi14Series.setData(calcRSI(candles, 14));
+
+      // 과매수(70) / 과매도(30) 수평선
+      rsi14Series.createPriceLine({
+        price: 70,
+        color: isDark ? "#4b556380" : "#9ca3af80",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: false,
+        title: "",
+      });
+      rsi14Series.createPriceLine({
+        price: 30,
+        color: isDark ? "#4b556380" : "#9ca3af80",
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: false,
+        title: "",
+      });
+
+      // RSI(2) 시리즈 — 주황
+      const rsi2Series = rsiChart.addSeries(LineSeries, {
+        color: "#f59e0b",
+        lineWidth: 1,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+      rsi2Series.setData(calcRSI(candles, 2));
+
+      rsiChart.timeScale().fitContent();
+
+      // ── 메인 ↔ RSI 시간축 동기화 ──────────────────────────────
+      let isSyncing = false;
+      chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (isSyncing || !range || !rsiChart) return;
+        isSyncing = true;
+        rsiChart.timeScale().setVisibleLogicalRange(range);
+        isSyncing = false;
+      });
+      rsiChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (isSyncing || !range) return;
+        isSyncing = true;
+        chart.timeScale().setVisibleLogicalRange(range);
+        isSyncing = false;
+      });
+
+      // ── RSI 리사이즈 대응 ──────────────────────────────────────
+      rsiRo = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry && rsiChart) {
+          rsiChart.applyOptions({ width: entry.contentRect.width });
+        }
+      });
+      rsiRo.observe(rsiContainerRef.current);
+    }
 
     // ── OHLCV 툴팁 (크로스헤어 연동, DOM 직접 업데이트) ─────────
     const tooltipBg = isDark ? "#1f2937" : "#f9fafb";
@@ -355,6 +551,8 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
     return () => {
       ro.disconnect();
       chart.remove();
+      if (rsiRo) rsiRo.disconnect();
+      if (rsiChart) rsiChart.remove();
     };
   }, [data, period, queryDate, volMultiplier]);
 
@@ -405,6 +603,10 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
               <span className="inline-block w-4 h-0.5 bg-[#a78bfa]" />
               <span className="text-gray-500 dark:text-gray-400">MA60</span>
             </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-4 h-0.5 bg-[#ef444480]" />
+              <span className="text-gray-500 dark:text-gray-400">BB(20,2)</span>
+            </span>
           </div>
           {isBreakout && (
             <span className="text-xs font-bold text-red-500 bg-white/80 dark:bg-gray-900/80 px-2 py-0.5 rounded border border-red-300 dark:border-red-700 whitespace-nowrap">
@@ -424,6 +626,22 @@ export default function StockChartInteractive({ data, period = 20, queryDate, vo
       )}
 
       <div ref={containerRef} className="w-full" />
+
+      {/* RSI 패널 */}
+      <div className="relative">
+        <div className="absolute top-1 left-2 z-10 pointer-events-none flex items-center gap-3 text-xs bg-white/70 dark:bg-gray-900/70 px-2 py-0.5 rounded">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 h-0.5 bg-[#8b5cf6]" />
+            <span className="text-gray-500 dark:text-gray-400">RSI(14)</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 h-0.5 bg-[#f59e0b]" />
+            <span className="text-gray-500 dark:text-gray-400">RSI(2)</span>
+          </span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px]">70/30</span>
+        </div>
+        <div ref={rsiContainerRef} className="w-full" />
+      </div>
 
       {/* N일 구간 정보 바 */}
       {range20.length > 0 && (

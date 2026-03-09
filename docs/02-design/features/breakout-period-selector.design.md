@@ -3,7 +3,7 @@
 > **Feature**: breakout-period-selector
 > **Phase**: Design
 > **Created**: 2026-03-07
-> **Version**: 1.0
+> **Version**: 2.0
 > **Author**: designer
 
 ---
@@ -484,6 +484,98 @@ const passed = runScreener(stocks, parsed.data.period, parsed.data.volMul);
 
 ---
 
+### 2.7 `components/stock-chart-interactive.tsx` — 차트 동적화 + RSI 패널
+
+#### 2.7.1 Props 확장
+
+```ts
+type Props = {
+  data: StockOHLCV[];
+  period?: number;        // N일 고가 구간 (기본 20)
+  queryDate?: string;     // 기준일 — 이후 봉은 반투명 "미래" 처리
+  volMultiplier?: number; // 거래량 배수 기준 (기본 2)
+};
+```
+
+#### 2.7.2 N일 고가 동적화
+
+- `period` prop으로 N일 구간 계산 (`rangeStart ~ rangeEnd`)
+- N일 최고가 수평선 (`createPriceLine`)
+- N일 구간 마커 (시작/끝 `arrowUp`)
+- 돌파 판정: 가격 돌파(종가 > N일 고가) + 거래량(≥ N일 평균 × volMultiplier) 동시 체크
+- N일 구간 정보 바: 최고가, 평균거래량, 배수, PASS/FAIL
+
+#### 2.7.3 미래 봉 프리뷰
+
+- `queryDate`가 과거일 때 기준일 이후 봉을 반투명 캔들로 표시
+- 수익률 배지: `{N}일 후 +X.X%`
+
+#### 2.7.4 볼린저 밴드 (BB)
+
+- `calcBollingerBands(data, 20, 2)` — 20일 기간, 2σ
+- 상/하 밴드: 반투명 빨강 `#ef444480` LineSeries
+
+#### 2.7.5 RSI(14) + RSI(2) 패널
+
+별도 120px 차트 패널 (메인 차트 아래):
+
+- **`calcRSI` 함수**: Wilder's smoothing 방식 RSI 계산
+  - 첫 `period` 구간: 단순 평균으로 초기 avgGain/avgLoss
+  - 이후: `avgGain = (avgGain × (period-1) + gain) / period`
+  - 반환: `{ time, value }[]` (value: 0~100)
+
+- **RSI(14)**: 보라 `#8b5cf6`, lineWidth 2 — 추세 과매수/과매도
+- **RSI(2)**: 주황 `#f59e0b`, lineWidth 1 — 단기 반전 타이밍
+- **70/30 수평선**: `createPriceLine` 회색 점선
+- `lastValueVisible: false`, `priceLineVisible: false`
+
+- **시간축 동기화**: `subscribeVisibleLogicalRangeChange` 상호 연결
+  - `isSyncing` 플래그로 무한루프 방지
+- **범례**: RSI 패널 좌상단에 `RSI(14)` 보라 + `RSI(2)` 주황 + `70/30` 표시
+- **cleanup**: `useEffect` return에서 RSI 차트 `remove()` + ResizeObserver `disconnect()`
+
+#### 2.7.6 검증 테이블
+
+- "검증 보기" 토글로 N일 구간 데이터 + 거래량 합계/평균/배수 계산 과정 표시
+- 가격 돌파 PASS/FAIL, 거래량 PASS/FAIL 행
+
+---
+
+### 2.8 `app/(dashboard)/screener/ScreenerControls.tsx` — swRange 콤보 추가
+
+```tsx
+// Props에 currentSwRange 추가
+type ScreenerControlsProps = {
+  // ... 기존 props
+  currentSwRange: string;  // "7" | "8" | "9" | "10" | "15" | "20"
+};
+
+// swRange select
+<select name="swRange" onChange={() => formRef.current?.requestSubmit()}>
+  {[7, 8, 9, 10, 15, 20].map(v => <option value={v}>횡보 {v}%</option>)}
+</select>
+```
+
+---
+
+### 2.9 localStorage 설정 복원
+
+- **저장 키**: `"screener-prefs"` → `{market, adapter, period, volMul, swRange}`
+- **복원 경로 2가지**:
+  - Full reload (F5/주소창): `page.tsx` 인라인 `<script>` (React 마운트 전 실행)
+  - SPA 전환(`<Link>`): ScreenerControls `useEffect` → `window.location.replace()` (full reload 강제)
+- 모든 select에 `onChange → requestSubmit()` auto-submit 적용
+
+---
+
+### 2.10 `app/(dashboard)/screener/ScreenerGuide.tsx` — 사용법 가이드
+
+- 접이식 "사용법 보기" 토글 (기본 접힘)
+- 4개 섹션: 기본 사용법, 차트 & 검증 보기, 대박 식당 비유, ORB 인트라데이(준비 중)
+- 위치: 요약 카드 아래, ScreenerTable 위
+
+---
+
 ## 3. 구현 순서
 
 | # | 파일 | 의존성 | 변경량 |
@@ -491,11 +583,13 @@ const passed = runScreener(stocks, parsed.data.period, parsed.data.volMul);
 | 1 | `lib/screener-types.ts` | 없음 | ~2줄 |
 | 2 | `lib/screener.ts` | types | ~25줄 |
 | 3 | `app/api/screener/route.ts` | screener | ~5줄 |
-| 4 | `app/(dashboard)/screener/ScreenerControls.tsx` | 없음 | ~10줄 |
-| 5 | `app/(dashboard)/screener/page.tsx` | screener, Controls | ~8줄 |
+| 4 | `app/(dashboard)/screener/ScreenerControls.tsx` | 없음 | ~15줄 |
+| 5 | `app/(dashboard)/screener/page.tsx` | screener, Controls | ~15줄 |
 | 6 | `app/(dashboard)/screener/ScreenerTable.tsx` | types | ~40줄 |
+| 7 | `components/stock-chart-interactive.tsx` | types | ~160줄 |
+| 8 | `app/(dashboard)/screener/ScreenerGuide.tsx` | 없음 (신규) | ~80줄 |
 
-**총 예상**: ~90줄 변경
+**총 예상**: ~340줄 변경/추가
 
 ---
 
@@ -506,7 +600,6 @@ const passed = runScreener(stocks, parsed.data.period, parsed.data.volMul);
 | `lib/market-data.ts` | 히스토리 조회는 period 무관 (항상 65일치 fetch) |
 | `lib/adapters/*` | 어댑터는 period 개념 없음 |
 | `lib/date-utils.ts` | 날짜 유틸과 무관 |
-| `components/stock-chart-interactive.tsx` | 차트 렌더링은 period 무관 |
 
 ---
 
@@ -522,5 +615,15 @@ const passed = runScreener(stocks, parsed.data.period, parsed.data.volMul);
 | 6 | 모달 초보자탭 | "일주일 동안" / "한 달 동안" 동적 표시 |
 | 7 | 모달 전문가탭 | "5일 고가 돌파" / "20일 고가 돌파" 동적 표시 |
 | 8 | BuySignal 텍스트 | "N일 고가를 ...% 돌파" + "기준: N배 이상" |
-| 9 | URL 파라미터 | `?period=N&volMul=N` 유지 |
-| 10 | API | `/api/screener?period=5&volMul=2` 정상 응답 |
+| 9 | URL 파라미터 | `?period=N&volMul=N&swRange=N` 유지 |
+| 10 | API | `/api/screener?period=5&volMul=2&swRange=15` 정상 응답 |
+| 11 | RSI 패널 | RSI(14) 완만한 곡선 + RSI(2) 급격한 진동 표시 |
+| 12 | RSI 동기화 | 메인 차트 스크롤/줌 시 RSI 패널도 동기화 |
+| 13 | RSI 범례 | 패널 좌상단에 RSI(14) 보라 + RSI(2) 주황 + 70/30 |
+| 14 | BB 밴드 | 볼린저 밴드 상/하 반투명 빨강 표시 |
+| 15 | 미래 봉 | 과거 날짜 조회 시 기준일 이후 반투명 캔들 + 수익률 배지 |
+| 16 | 검증 테이블 | "검증 보기" 토글로 거래량/가격 PASS/FAIL 확인 |
+| 17 | swRange 콤보 | 횡보 범위 7~20% 선택 + auto-submit |
+| 18 | 설정 복원 | 페이지 새로고침 후 localStorage에서 설정 복원 |
+| 19 | 다크모드 | RSI 패널 + BB 밴드 다크/라이트 모드 가시성 |
+| 20 | 사용법 가이드 | "사용법 보기" 토글 동작 확인 |

@@ -1,8 +1,116 @@
 # turbo-break 변경 로그
 
-> **최종 업데이트**: 2026-03-04
-> **현재 버전**: v2.1
+> **최종 업데이트**: 2026-03-10
+> **현재 버전**: v3.0
 > **상태**: 배포 권장 ✅
+
+---
+
+## [v3.0] - 2026-03-10
+
+### 추가 (Added)
+
+#### 돌파 기간 + 거래량 배수 선택 기능
+- **period 파라미터**: 1/2/3/4/5/20일 돌파 선택 (기본값 5일)
+  - URL `?period=N` 형식
+  - ScreenerControls에 period select 추가 (auto-submit)
+  - screener.ts 함수에 period 인자 전달 (파라미터화)
+
+- **volMul 파라미터**: 0.5~5배 거래량 배수 선택 (기본값 2배)
+  - URL `?volMul=N` 형식
+  - ScreenerControls에 volMul select 추가 (auto-submit)
+  - checkVolumeSurge, evaluateBuySignal에 volMultiplier 인자 전달
+
+- **swRange 파라미터**: 7/8/9/10/15/20% 횡보 범위 선택 (기본값 15%)
+  - URL `?swRange=N` 형식
+  - ScreenerControls에 swRange select 추가
+  - checkSideways에 maxRange 인자 전달
+
+#### 차트 기능 확장
+- **RSI(14) + RSI(2) 패널** (`stock-chart-interactive.tsx`)
+  - Wilder's smoothing 방식 RSI 계산
+  - RSI(14): 추세 과매수/과매도 (보라색)
+  - RSI(2): 단기 반전 타이밍 (주황색)
+  - 별도 120px 차트 패널, 메인 차트와 시간축 동기화
+  - 70/30 수평선, 범례, ResizeObserver 대응
+
+- **Bollinger Bands (20, 2σ)**
+  - 상/하 밴드 반투명 빨강 표시
+  - 변동성 분석 기능
+
+- **검증 테이블**
+  - "검증 보기" 토글로 거래량 합계/평균/배수/PASS/FAIL 표시
+  - 계산 과정 투명성
+
+- **미래 봉 프리뷰**
+  - 과거 날짜 조회 시 5봉을 반투명 캔들로 표시
+  - 수익률 배지 제공
+
+#### UI 컴포넌트 분리
+- **BuySignalPanel.tsx** (209줄): 초보자 분석 패널 독립화
+- **ExpertPanel.tsx** (143줄): 전문가 분석 패널 독립화
+- **screener-constants.ts** (338줄): 상수 + 함수 모음
+  - `getConditionLabels(period)`, `getConditionMeta(period)`, `getExpertDefs(period)`
+- **screener-utils.ts** (311줄): 유틸 함수 모음
+  - `generateKeyPoint()`, `toKidText()`, `toKidWarning()`, `downloadCsv()` 등
+- **screener-components.tsx** (191줄): 미니 컴포넌트
+  - `SortIcon`, `PassBadge`, `GradeBadge`, `ConditionTooltip`, `LegendItem`, `Sparkline`
+
+#### localStorage 설정 복존
+- **screener-prefs 키로 자동 저장**: market, adapter, period, volMul, swRange, date
+- **2경로 복원**:
+  - Full reload (F5/주소창): page.tsx 인라인 script (React 마운트 전)
+  - SPA 전환: ScreenerControls useEffect → window.location.replace()
+
+#### 사용법 가이드
+- **ScreenerGuide.tsx** (180줄): 접이식 가이드 (기본 접힘)
+  - 섹션 1: 기본 사용법 (market/date/adapter 선택, period/volMul/swRange 설정)
+  - 섹션 2: 차트 보기 & 검증 테이블 (RSI/BB 활용법)
+  - 섹션 3: 대박 식당 비유 (BuySignal 점수 해석)
+  - 섹션 4: ORB 인트라데이 (준비 중)
+
+### 변경 (Changed)
+
+#### 함수 파라미터화
+- `checkBreakout20(today, prior, period, volMultiplier)` — 4인자
+- `checkSideways(prior, period, maxRange)` — 3인자
+- `checkVolumeSurge(today, prior, period, multiplier)` — 4인자
+- `evaluateStock(stock, period, volMultiplier, swRange)` — 4인자
+- `evaluateAllStocks(stocks, period, requiredConditions?, volMultiplier, swRange)` — 5인자
+- `evaluateBuySignal(c, m, period, volMultiplier, swRange)` — 5인자
+- `runScreener(stocks, period, volMultiplier, swRange)` — 4인자
+
+#### UI 동적화
+- `getConditionLabels(period)` 함수로 변경 (기존 상수 → 함수)
+  - "20일 돌파" → "${period}일 돌파"
+- `toKidText(text, period)` 함수 추가
+  - periodLabel: "하루"/"이틀"/"N일"/"한 달" (4분기)
+- `toKidWarning(text, period)` 함수 추가
+  - 경고 텍스트 정규식 동적 변경
+- `generateKeyPoint(m, grade, period)` 함수 수정
+  - "N일 고가를 ...% 강하게 돌파" 동적화
+- `getConditionRawPatterns(period)` 함수 추가
+  - 정규식을 period 기반 동적 생성
+
+#### 타입 변경
+- `ScreenerResult`에 `period: number` 필드 추가
+- `breakout20` 필드명 → `breakout` (범용성)
+
+#### API 스키마
+- querySchema에 `period`, `volMul`, `swRange` 파라미터 추가 (Zod 검증)
+
+### 고정 (Fixed)
+
+- ✅ 모든 v3.0 스펙 구현 (22건 EXTRA 기능 포함)
+- ✅ Design Match Rate 100% (70/70 항목 PASS)
+- ✅ 차트 돌파 판정 정확도 개선 (가격 + 거래량 동시 체크)
+
+### 알려진 문제 (Known Issues)
+
+- `stock-chart-interactive.tsx` 855줄 (300줄 기준 초과, 차트 특성상 단일 컴포넌트)
+  - 권장: `calcRSI`, `calcBollingerBands`, `calcMA` → `chart-utils.ts` 분리 (v4에서)
+- `.env.example` 미존재 (v4 계획)
+- `/screener` 라우트 `error.tsx`, `loading.tsx` 미구현 (v4 계획)
 
 ---
 
@@ -349,5 +457,5 @@ MIT License (turbo-break 프로젝트)
 
 ---
 
-**최종 업데이트**: 2026-03-04
+**최종 업데이트**: 2026-03-10
 **유지보수자**: turbo-break 개발팀
