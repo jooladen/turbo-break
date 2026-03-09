@@ -89,12 +89,12 @@ export default function LandingPage() {
             <a href="#contact" className="hidden md:block text-[13px] text-gray-500 hover:text-white transition-colors duration-300">
               문의
             </a>
-            <Link
+            <a
               href="/screener"
               className="px-5 py-2 text-[13px] font-semibold bg-white text-black rounded-full hover:bg-gray-200 transition-all duration-300"
             >
               스크리너 시작
-            </Link>
+            </a>
           </div>
         </div>
       </nav>
@@ -151,7 +151,7 @@ export default function LandingPage() {
 
           {/* CTA */}
           <div className="flex items-center justify-center gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-            <Link
+            <a
               href="/screener"
               className="group relative px-8 py-4 text-sm font-semibold bg-white text-black rounded-full hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] transition-all duration-500"
             >
@@ -161,7 +161,7 @@ export default function LandingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                 </svg>
               </span>
-            </Link>
+            </a>
             <a
               href="#features"
               className="px-8 py-4 text-sm font-semibold text-gray-400 border border-white/10 rounded-full hover:border-white/25 hover:text-white transition-all duration-300"
@@ -388,7 +388,7 @@ export default function LandingPage() {
             <p className="text-gray-400 mb-8 max-w-md mx-auto">
               회원가입 없이 무료로 사용 가능합니다. 오늘의 돌파 종목을 확인하세요.
             </p>
-            <Link
+            <a
               href="/screener"
               className="inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold bg-white text-black rounded-full hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] transition-all duration-500"
             >
@@ -396,7 +396,7 @@ export default function LandingPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -418,9 +418,9 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/screener" className="text-xs text-gray-600 hover:text-gray-300 transition-colors duration-300">
+            <a href="/screener" className="text-xs text-gray-600 hover:text-gray-300 transition-colors duration-300">
               스크리너
-            </Link>
+            </a>
             <Link href="/intraday" className="text-xs text-gray-600 hover:text-gray-300 transition-colors duration-300">
               인트라데이
             </Link>
