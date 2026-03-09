@@ -105,7 +105,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0f]">
       {/* localStorage 설정 복원 — full reload 시 React 마운트 전 실행 */}
       {/* SPA 전환 시에는 ScreenerControls useEffect가 처리 */}
-      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.period)q.set('period',v.period);if(v.volMul)q.set('volMul',v.volMul);if(v.swRange)q.set('swRange',v.swRange);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.period)q.set('period',v.period);if(v.volMul)q.set('volMul',v.volMul);if(v.swRange)q.set('swRange',v.swRange);if(v.date)q.set('date',v.date);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
         {/* 페이지 헤더 — 그라데이션 배경 */}
         <div className="relative mb-6 rounded-2xl overflow-hidden">

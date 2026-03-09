@@ -28,6 +28,7 @@ type Prefs = {
   period?: string;
   volMul?: string;
   swRange?: string;
+  date?: string;
 };
 
 const VOL_MUL_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
@@ -50,7 +51,7 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
 
       const prefs = JSON.parse(raw) as Record<string, string>;
       const q = new URLSearchParams();
-      const keys = ["market", "adapter", "period", "volMul", "swRange"] as const;
+      const keys = ["market", "adapter", "period", "volMul", "swRange", "date"] as const;
       for (const key of keys) {
         if (prefs[key]) q.set(key, prefs[key]);
       }
@@ -65,13 +66,13 @@ export default function ScreenerControls({ market, date, adapterType, currentPer
     setIsLoading(true);
     const fd = new FormData(e.currentTarget);
     try {
-      // 날짜는 저장하지 않음 — 항상 오늘 날짜가 기본값이어야 함
       const prefs: Prefs = {
         market: localMarket,
         adapter: (fd.get("adapter") as AdapterType) ?? "mock",
         period: (fd.get("period") as string) ?? "5",
         volMul: (fd.get("volMul") as string) ?? "2",
         swRange: (fd.get("swRange") as string) ?? "15",
+        date: (fd.get("date") as string) ?? "",
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
     } catch {
