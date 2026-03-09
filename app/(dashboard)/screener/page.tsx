@@ -5,6 +5,7 @@ import { evaluateAllStocks } from "@/lib/screener";
 import ThemeToggle from "@/components/theme-toggle";
 import ScreenerControls from "./ScreenerControls";
 import ScreenerTable from "./ScreenerTable";
+import ScreenerGuide from "./ScreenerGuide";
 
 export const metadata = {
   title: "고가 돌파 스크리너 | turbo-break",
@@ -101,45 +102,50 @@ export default async function ScreenerPage({ searchParams }: Props) {
   const passed10 = results.filter((r) => r.passCount === 10).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* localStorage 설정 복원 — React 마운트 전 실행으로 깜빡임 방지 */}
-      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.period)q.set('period',v.period);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0f]">
+      {/* localStorage 설정 복원 — full reload 시 React 마운트 전 실행 */}
+      {/* SPA 전환 시에는 ScreenerControls useEffect가 처리 */}
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p=new URLSearchParams(location.search);if(!p.has('market')&&!p.has('adapter')){var s=localStorage.getItem('screener-prefs');if(s){var v=JSON.parse(s),q=new URLSearchParams();if(v.market)q.set('market',v.market);if(v.adapter)q.set('adapter',v.adapter);if(v.period)q.set('period',v.period);if(v.volMul)q.set('volMul',v.volMul);if(v.swRange)q.set('swRange',v.swRange);location.replace('/screener?'+q.toString())}}}catch(e){}})()` }} />
       <div className="max-w-screen-2xl mx-auto px-4 py-8">
-        {/* 페이지 헤더 */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
-              <a
-                href="/dashboard"
-                className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                대시보드
-              </a>
-              <span>/</span>
-              <span className="text-gray-600 dark:text-gray-300">스크리너</span>
+        {/* 페이지 헤더 — 그라데이션 배경 */}
+        <div className="relative mb-6 rounded-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-violet-600/5 dark:from-blue-600/10 dark:to-violet-600/10 rounded-2xl" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative p-6">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
+                <a
+                  href="/"
+                  className="hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  홈
+                </a>
+                <span>/</span>
+                <span className="text-gray-600 dark:text-gray-300">스크리너</span>
+              </div>
+              <ThemeToggle />
             </div>
-            <ThemeToggle />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {period}일 고가 돌파 스크리너
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              박스권 횡보 후 수급을 동반한 안전한 돌파 종목 필터링
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {period}일 고가 돌파 스크리너
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            박스권 횡보 후 수급을 동반한 안전한 돌파 종목 필터링
-          </p>
         </div>
 
         {/* 조회 컨트롤 */}
         <ScreenerControls market={market} date={date} adapterType={adapterType} currentPeriod={String(period)} currentVolMul={String(volMultiplier)} currentSwRange={String(swRange)} currentConds={activeConditions.join(",")} />
 
-        {/* 요약 카드 */}
+        {/* 요약 카드 — 글래스모피즘 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/[0.06] p-5 hover:border-gray-300 dark:hover:border-white/10 transition-colors">
             <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
               기준일
             </div>
             <div className="text-xl font-bold text-gray-900 dark:text-gray-100">{date}</div>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-gray-200 dark:border-white/[0.06] p-5 hover:border-gray-300 dark:hover:border-white/10 transition-colors">
             <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
               스캔 종목
             </div>
@@ -148,7 +154,7 @@ export default async function ScreenerPage({ searchParams }: Props) {
               <span className="text-sm font-normal text-gray-400 dark:text-gray-500 ml-1">종목</span>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-blue-200/50 dark:border-blue-500/10 p-5 hover:border-blue-300 dark:hover:border-blue-500/20 transition-colors">
             <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
               완전 통과 (10/10)
             </div>
@@ -158,6 +164,9 @@ export default async function ScreenerPage({ searchParams }: Props) {
             </div>
           </div>
         </div>
+
+        {/* 사용법 가이드 */}
+        <ScreenerGuide />
 
         {/* 결과 테이블 */}
         <ScreenerTable
